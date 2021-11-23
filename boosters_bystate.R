@@ -7,6 +7,16 @@ library(tidyverse)
 total_data <- read_csv("https://data.cdc.gov/api/views/unsk-b7fc/rows.csv?accessType=DOWNLOAD") %>% 
   clean_names()
 
+states <- c("CT", "ME", "MA", "NH", "RI", "VT", "NJ", "NY", "PA",
+           "IL", "IN", "MI", "OH", "WI", "IA", "KS", "MN", "MO", "NE", "ND", "SD",
+           "DE", "FL", "GA", "MD", "NC", "SC", "VA", "WV", "AL", "KY", "MS", "TN", "AK", "LA", "OK", "TX","DC",
+           "AZ", "CO", "NV", "NM", "UT", "WY", "AR", "CA", "HI", "OR", "WA", "ID", "MT")
+
+regions <- data.frame(state = states, region = c(rep("Northeast", 9),
+                                           rep("Midwest", 12),
+                                           rep("South", 17),
+                                           rep("West", 13)))
+
 ##----------ANALYSIS----------
 boosters <- total_data %>% 
   select(date, mmwr_week, location, distributed, administered, admin_per_100k,
@@ -35,17 +45,34 @@ boosters <- total_data %>%
 
 for_plot <- boosters %>% 
   group_by(location, date) %>% 
-  filter(date > "2021-10-08") 
+  filter(date > "2021-10-08") %>% 
+  left_join(regions, by = c("location" = "state")) %>%
+  rename(percent_boosted = additional_doses_vax_pct)
 
-fig <- ggplot(for_plot, aes(x = date, y = additional_doses_vax_pct, color = location)) +
+fig <- ggplot(for_plot, aes(x = date, y = percent_boosted, 
+                            color = location)) +
   geom_line() + 
-  labs(title = "Percent of Population Who Have Recieved a Booster Dose\nof the COVID-19 Vaccine By State",
+  labs(title = "Percent of Population Who Have Recieved a Booster Dose of the COVID-19 Vaccine, By State",
        x = " ",
-       y = "Percent of population who receieved a booster") +
+       y = "Percent of population who receieved a booster",
+       color = "State",
+       subtitle = "Data from CDC") +
+  theme_minimal()
+
+# facet_wrap
+fig2 <- for_plot %>%
+  drop_na() %>% 
+  ggplot(aes(x = date, y = percent_boosted, 
+             color = interaction(location, region),
+             text = paste("state:", location))) +
+  geom_line() + 
+  labs(title = "Percent of Population Who Have Recieved a Booster Dose of the COVID-19 Vaccine, By State",
+       x = " ",
+       y = "Percent of population who receieved a booster",
+       color = "State",
+       subtitle = "Data from CDC") +
+  facet_wrap(~region) +
   theme_minimal()
 
 ggplotly(fig)
-
-# to do:
-# facet wrap by region?
-# drop non-states
+ggplotly(fig2, tooltip = c("date", "percent_boosted", "text"))
