@@ -17,6 +17,10 @@ regions <- data.frame(state = states, region = c(rep("Northeast", 9),
                                            rep("South", 17),
                                            rep("West", 13)))
 
+current_us_perc_boosted <- total_data %>% 
+  filter(location == "US") %>% 
+  select(date, location, additional_doses, additional_doses_vax_pct)
+
 ##----------ANALYSIS----------
 boosters <- total_data %>% 
   select(date, mmwr_week, location, distributed, administered, admin_per_100k,
