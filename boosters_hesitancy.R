@@ -1,12 +1,11 @@
-#libraries 
+# libraries 
 library(janitor)
 library(stringr)
 library(scales)
 library(reshape2)
 library(ggpubr)
 library(geofacet)
-library(kableExtra) # create a nicely formated HTML table
-library(formattable) # for the color_tile function
+library(srvyr)
 library(tidyverse)
 
 # covid_booster_likely_get 
@@ -32,6 +31,7 @@ surveym102 <- read.csv("2022/CovidNearYou Datafile 02 Jan 09PM (last 7).csv") %>
          reason_not_get_covid19_booster_mc_others_before_me,
          reason_not_get_covid19_booster_mc_other_text,
          which_covid19_vaccine,
+         received_all_covid19_required_doses,
          get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, race, 
          income, party_id, gender, race_recode, educ4, is_essential_worker, age7, age)
 
@@ -57,6 +57,7 @@ surveym109 <- read.csv("2022/CovidNearYou Datafile 09 Jan 09PM (last 7).csv") %>
          reason_not_get_covid19_booster_mc_others_before_me,
          reason_not_get_covid19_booster_mc_other_text,
          which_covid19_vaccine,
+         received_all_covid19_required_doses,
          get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, race, 
          income, party_id, gender, race_recode, educ4, is_essential_worker, age7, age)
 
@@ -82,6 +83,7 @@ surveym116 <- read.csv("2022/CovidNearYou Datafile 16 Jan 09PM (last 7).csv") %>
          reason_not_get_covid19_booster_mc_others_before_me,
          reason_not_get_covid19_booster_mc_other_text,
          which_covid19_vaccine,
+         received_all_covid19_required_doses,
          get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, race, 
          income, party_id, gender, race_recode, educ4, is_essential_worker, age7, age)
 
@@ -107,6 +109,7 @@ surveym123 <- read.csv("2022/CovidNearYou Datafile 23 Jan 09PM (last 7).csv") %>
          reason_not_get_covid19_booster_mc_others_before_me,
          reason_not_get_covid19_booster_mc_other_text,
          which_covid19_vaccine,
+         received_all_covid19_required_doses,
          get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, race, 
          income, party_id, gender, race_recode, educ4, is_essential_worker, age7, age)
 
@@ -132,6 +135,7 @@ surveym130 <- read.csv("2022/CovidNearYou Datafile 30 Jan 09PM (last 7).csv") %>
          reason_not_get_covid19_booster_mc_others_before_me,
          reason_not_get_covid19_booster_mc_other_text,
          which_covid19_vaccine,
+         received_all_covid19_required_doses,
          get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, race, 
          income, party_id, gender, race_recode, educ4, is_essential_worker, age7, age)
 
@@ -158,6 +162,7 @@ surveym206 <- read.csv("2022/CovidNearYou Datafile 06 Feb 09PM (last 7).csv") %>
          reason_not_get_covid19_booster_mc_others_before_me,
          reason_not_get_covid19_booster_mc_other_text,
          which_covid19_vaccine,
+         received_all_covid19_required_doses,
          get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, race, 
          income, party_id, gender, race_recode, educ4, is_essential_worker, age7, age)
 
@@ -183,6 +188,7 @@ surveym213 <- read.csv("2022/CovidNearYou Datafile 13 Feb 09PM (last 7).csv") %>
          reason_not_get_covid19_booster_mc_others_before_me,
          reason_not_get_covid19_booster_mc_other_text,
          which_covid19_vaccine,
+         received_all_covid19_required_doses,
          get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, race, 
          income, party_id, gender, race_recode, educ4, is_essential_worker, age7, age)
 
@@ -208,6 +214,7 @@ surveym220 <- read.csv("2022/CovidNearYou Datafile 20 Feb 09PM (last 7).csv") %>
          reason_not_get_covid19_booster_mc_others_before_me,
          reason_not_get_covid19_booster_mc_other_text,
          which_covid19_vaccine,
+         received_all_covid19_required_doses,
          get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, race, 
          income, party_id, gender, race_recode, educ4, is_essential_worker, age7, age)
 
@@ -240,7 +247,6 @@ twenty22 <- twenty22_total %>%
   # add dividions by week 
   mutate(week = cut.Date(response_date, breaks = "1 week", labels = FALSE)) %>% 
   # code into vaccinated and unvaccinated - drop those unsure of vaccination 
-  filter(get_vaccine_yesno != 3) %>%
   mutate(get_vaccine_yesno = replace(get_vaccine_yesno, get_vaccine_yesno == 1, "Vaccinated")) %>%
   mutate(get_vaccine_yesno = replace(get_vaccine_yesno, get_vaccine_yesno == 2, "Unvaccinated")) %>% 
   select(-start_date) %>% 
@@ -389,6 +395,179 @@ percent_likely_vaxtype <- analysis %>%
   mutate(rxn_percent = weighted.mean(reason_not_get_covid19_booster_mc_reaction, weight_daily_national_13plus)) %>% 
   mutate(norisk_percent = weighted.mean(reason_not_get_covid19_booster_mc_not_at_risk, weight_daily_national_13plus)) %>% 
   mutate(oths_percent = weighted.mean(reason_not_get_covid19_booster_mc_others_before_me, weight_daily_national_13plus))
+
+##-----------------FACTORING---------------
+
+analysis_factored <- analysis
+
+analysis_factored$party<- factor(analysis$party_id, levels = c(1,2,3), labels = c("Republican", "Democrat", "Independent"))
+
+analysis_factored$which_vax<- factor(analysis$which_covid19_vaccine, levels = c(1,2,3), labels = c("Moderna", "Pfizer", "Johnson & Johnson"))
+
+
+analysis_factored$edu<- factor(analysis$educ4, levels = c(1,2,3,4,5), labels = c("High School or Less",
+                                                              "Some College",
+                                                              "College or More", 
+                                                              "Post Graduate Degree","Did Not Respond"))
+
+analysis_factored$race_recode <- ifelse(analysis$race_recode==6,2,analysis$race_recode)
+
+analysis_factored$race_recode<- factor(analysis_factored$race_recode, levels = c(1,2,3,4,5,7,8,9,10), labels = c("White, not Hispanic","Single Other Race","Hispanic or Latino/a",
+                                                                              "Black of African American", "Asian",
+                                                                              "Native Hawaiian or Other Pacific Islander", "American Indian or Alaska Native", 
+                                                                              "Did Not Respond", "Multi-Racial"))
+
+analysis_factored$is_essential_worker <- ifelse(is.na(analysis$is_essential_worker),3,analysis$is_essential_worker)
+
+analysis_factored$essential_worker<- factor(analysis_factored$is_essential_worker, levels = c(1,2,3), labels = c("Yes",
+                                                                                     "No",
+                                                                                     "Did Not Respond"))
+
+
+analysis_factored$household_income<- factor(analysis$income, levels = c(1,2,3,4,5,6,7,8), labels = c("Under $15,000",
+                                                                                  "Between $15,000 and $29,999",
+                                                                                  "Between $30,000 and $49,999",
+                                                                                  "Between $50,000 and $74,999",
+                                                                                  "Between $75,000 and $99,999",
+                                                                                  "Between $100,000 and $150,000",
+                                                                                  "Over $150,000","Did Not Respond"))
+
+
+# only looking at vaccinated people 
+analysis_factored$vaccination_status <- ifelse(analysis$get_vaccine_yesno == "Unvaccinated", "Unvaccinated",
+                                        ifelse(analysis$get_vaccine_yesno == 3, "Did Not Respond",
+                                        ifelse(analysis$received_all_covid19_required_doses == 2, "Partially Vaccinated",
+                                               ifelse(analysis$received_all_covid19_required_doses == 1, "Fully Vaccinated", "Did Not Respond"))))
+
+analysis_factored$vaccination_status <- factor(analysis_factored$vaccination_status, levels=c("Unvaccinated",
+                                                                  "Partially Vaccinated",
+                                                                  "Fully Vaccinated",
+                                                                  "Fully Vaccinated and Boosted","Did Not Respond"))
+
+analysis_factored$age_group <- cut(analysis_factored$age, breaks = c(17.99,29,39,49,64,74,Inf))
+
+levels(analysis_factored$age_group) <-c("18-29 years",
+                          "30-39 years",
+                          "40-49 years",
+                          "50-64 years",
+                          "65-74 years",
+                          "75+ years")
+
+
+analysis_factored$gender <- factor(analysis_factored$gender, levels = c(1,2,3,4), labels = c("Male","Female","Transgender or Nonbinary","No answer"))
+
+analysis_factored$gender <- factor(analysis_factored$gender, levels = c("Female","Male","Transgender or Nonbinary","No answer"))
+
+analysis_factored <- analysis_factored  %>% select(response_id, response_date, week, covid19_booster_likely_to_get, 
+                            reason_not_get_covid19_booster_mc_inconvenient,
+                            reason_not_get_covid19_booster_mc_something_else,
+                            reason_not_get_covid19_booster_mc_too_new,
+                            reason_not_get_covid19_booster_mc_side_effect,
+                            reason_not_get_covid19_booster_mc_threat_exaggerated,
+                            reason_not_get_covid19_booster_mc_distrust_government,
+                            reason_not_get_covid19_booster_mc_distrust_scientist,
+                            reason_not_get_covid19_booster_mc_too_political,
+                            reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated,
+                            reason_not_get_covid19_booster_mc_reaction,
+                            reason_not_get_covid19_booster_mc_not_at_risk,
+                            reason_not_get_covid19_booster_mc_others_before_me,
+                            reason_not_get_covid19_booster_mc_other_text,
+                            get_vaccine_yesno, state, zip_code, race_recode, gender, party, which_vax, edu,
+                            essential_worker, household_income, vaccination_status, age_group,
+                            weight_daily_national_13plus, weight_state_weekly)
+
+##-----------------SURVEY ANALYSIS---------------
+
+analysis_factored_surv <- analysis_factored %>% as_survey_design(ids = 1, weights = weight_daily_national_13plus)
+
+# MEC - come back to the chi squared test when deciding what to compare!!
+#select variables/filter to include
+# df_chi <- analysis_factored %>%
+  # filter(home_test==1 | home_test ==0)
+
+#drop empty levels for chi square
+#df_chi$race <- droplevels(df_chi$race)
+#df_chi$gender <- droplevels(df_chi$gender)
+#df_chi$edu <- droplevels(df_chi$edu)
+#df_chi$age_group <- droplevels(df_chi$age_group)
+#df_chi$household_income <- droplevels(df_chi$household_income)
+#df_chi$vaccination_status <- droplevels(df_chi$vaccination_status)
+#df_chi$essential_worker <- droplevels(df_chi$essential_worker)
+
+#format  explicitely as survey
+#df_chi <- df_chi %>% 
+  #as_survey_design(ids = 1, weights = weight_daily_national_13plus)
+
+##-----------------LONGITUDINAL ANALYSIS---------------
+
+# MEC - filter for anything?
+side_ef_date <- analysis_factored_surv %>%
+  group_by(response_date) %>%
+  dplyr::summarise(side_ef = survey_mean(reason_not_get_covid19_booster_mc_side_effect, vartype = "ci", proportion = TRUE, 
+                                         prop_method = "beta",  na.rm = TRUE))
+
+got_covandvax_date <- analysis_factored_surv %>%
+  group_by(response_date) %>%
+  dplyr::summarise(got_covandvax = survey_mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated,
+                                               vartype = "ci", proportion = TRUE, 
+                                               prop_method = "beta",  na.rm = TRUE))
+
+too_pol_date <- analysis_factored_surv %>%
+  group_by(response_date) %>%
+  dplyr::summarise(too_pol = survey_mean(reason_not_get_covid19_booster_mc_too_political,
+                                         vartype = "ci", proportion = TRUE, 
+                                         prop_method = "beta",  na.rm = TRUE))
+
+distrust_gov_date <- analysis_factored_surv %>%
+  group_by(response_date) %>%
+  dplyr::summarise(distrust_gov = survey_mean(reason_not_get_covid19_booster_mc_distrust_government,
+                                         vartype = "ci", proportion = TRUE, 
+                                         prop_method = "beta",  na.rm = TRUE))
+
+distrust_sci_date <- analysis_factored_surv %>%
+  group_by(response_date) %>%
+  dplyr::summarise(distrust_sci = survey_mean(reason_not_get_covid19_booster_mc_distrust_scientist,
+                                              vartype = "ci", proportion = TRUE, 
+                                              prop_method = "beta",  na.rm = TRUE))
+
+
+
+
+
+#use_by_date2<-use_by_date %>%
+ # mutate('Among all respondents' = home_test*100, 'Among all respondents upper'= home_test_upp*100, 'Among all respondents lower' = home_test_low*100) %>%
+  # dplyr::select('MMWR Week'=mmwr_date,'Among all respondents','Among all respondents upper', 'Among all respondents lower')
+
+#use_by_date_only_sick2<-use_by_date_only_sick %>%
+ # mutate('Among those with COVID-like illness' = home_test*100, 'Among those with COVID-like illness upper'= home_test_upp*100, 'Among those with COVID-like illness lower' = home_test_low*100) %>%
+  #dplyr::select('MMWR Week'=mmwr_date,'Among those with COVID-like illness','Among those with COVID-like illness upper', 'Among those with COVID-like illness lower')
+
+#use_by_date_only_tested2<-use_by_date_only_tested %>%
+ # mutate('Among those who report any testing' = home_test*100, 'Among those who report any testing upper'= home_test_upp*100, 'Among those who report any testing lower' = home_test_low*100) %>%
+  #dplyr::select('MMWR Week'=mmwr_date,'Among those who report any testing','Among those who report any testing upper', 'Among those who report any testing lower')
+
+#image_df1<-merge(use_by_date2,use_by_date_only_sick2, by="MMWR Week", all.x=TRUE,all.y=TRUE)
+#image_df2<-merge(image_df1,use_by_date_only_tested2, by="MMWR Week", all.x=TRUE,all.y=TRUE)
+#write.csv(image_df2,"image_data_3_17_22.csv")
+
+geom.text.size = 3.2
+theme.size = (14/5) * geom.text.size
+break.vec <- c(seq(from = as.Date("2022-01-01"), to = as.Date("2022-02-12"),
+                   by = "1 week"))
+
+ggplot()+
+  geom_line(aes(y=side_ef*100,x=response_date, color="Side Effects"), data=side_ef_date) +
+  geom_point(aes(y=side_ef*100,x=response_date, color="Side Effects"), data=side_ef_date) + 
+  geom_ribbon(aes(ymin=side_ef_low*100,ymax=side_ef_upp*100, x=response_date, fill="Side Effects"),alpha=0.3, data=side_ef_date) +
+  theme_classic() +
+  #scale_color_manual(values = c("#4E79A6","#F28E2C","#E15758"), name = "At-Home Test Use", limits = c("Among those who report any testing","Among those with COVID-like illness","Among all respondents"))+
+  #scale_fill_manual(values = c("#4E79A6","#F28E2C","#E15758"), name = "At-Home Test Use", limits = c("Among those who report any testing","Among those with COVID-like illness","Among all respondents"))+
+  scale_y_continuous(limit=c(0,100),expand = c(0, 0))+
+  scale_x_date(date_labels = "%b %d", breaks=break.vec, limits = c(as.Date("2022-01-01"),as.Date("2022-02-12")))+
+  ylab("Percent Respondents (%)") +
+  xlab("Date") +
+  theme(legend.position = "right") +
+  theme(legend.text=element_text(size=theme.size))
 
 ##---------------PLOTS----------------
 # overall - 2022
@@ -571,3 +750,7 @@ percent_likely_age %>%
   theme_minimal() +
   theme(plot.title = element_text(face = "bold")) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+
+
+
