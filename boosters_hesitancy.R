@@ -9,7 +9,6 @@ library(kableExtra) # create a nicely formated HTML table
 library(formattable) # for the color_tile function
 library(tidyverse)
 
-# include received_all_covid19_required_doses_exclude_booster? 
 # covid_booster_likely_get 
   # 1 = yes, 2 = no, 3 = not sure, 4 = already have booster, 5 = no answer
 
@@ -408,15 +407,15 @@ percent_likely %>%
          "others before me" = oths_percent) %>% 
   melt(id.vars = NULL) %>% 
   arrange(desc(value)) %>% 
-  ggplot(aes(x = reorder(variable, -value), y = value, fill = variable)) +
+  ggplot(aes(x = reorder(variable, value), y = value, fill = variable)) +
   geom_col() +
-  labs(x = "Reason",
+  labs(x = " ",
        y = "Percent of Respondents",
-       title = "Reasons Vaccinated Respondents Cited For Not Getting the Booster") +
+       title = "Reasons Vaccinated Respondents Cited For Not Getting a COVID-19 Booster",
+       subtitle = "Momentive Survey Data From the First Six Weeks of 2022 (Jan 1 to Feb 12)") +
   theme_minimal() +
+  coord_flip() + 
   theme(plot.title = element_text(face = "bold")) +
-  #theme(axis.text.x = element_blank()) +
-  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1)) + 
   theme(legend.position = "none")
   
 # by week - overall 
