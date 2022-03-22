@@ -14,7 +14,9 @@ library(tidyverse)
   # 1 = yes, 2 = no, 3 = not sure, 4 = already have booster, 5 = no answer
 
 ##---------------DATA LOAD------------------
-## 2022 - MEC - go back earlier? 
+## 2022 - read in data from Dec 27th to Feb 20th (first 7 weeks of 2022)
+# select relevant columns, and pull weights from separate weight data -- and merge
+# with responses
 surveym102 <- read.csv("2022/CovidNearYou Datafile 02 Jan 09PM (last 7).csv") %>%
   select(response_id, getting_covid19_booster, covid19_booster_likely_to_get, 
          reason_not_get_covid19_booster_mc_inconvenient,
@@ -31,7 +33,8 @@ surveym102 <- read.csv("2022/CovidNearYou Datafile 02 Jan 09PM (last 7).csv") %>
          reason_not_get_covid19_booster_mc_others_before_me,
          reason_not_get_covid19_booster_mc_other_text,
          which_covid19_vaccine,
-         get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, party_id, gender, race, age7)
+         get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, race, 
+         income, party_id, gender, race_recode, educ4, is_essential_worker, age7, age)
 
 surveym102w <- read.csv("2022/CovidNearYou Weight 02 Jan 09PM (last 7).csv") %>%
   select(response_id, weight_daily_national_13plus, weight_state_weekly, weight_state_monthly)
@@ -55,7 +58,8 @@ surveym109 <- read.csv("2022/CovidNearYou Datafile 09 Jan 09PM (last 7).csv") %>
          reason_not_get_covid19_booster_mc_others_before_me,
          reason_not_get_covid19_booster_mc_other_text,
          which_covid19_vaccine,
-         get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, party_id, gender, race, age7)
+         get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, race, 
+         income, party_id, gender, race_recode, educ4, is_essential_worker, age7, age)
 
 surveym109w <- read.csv("2022/CovidNearYou Weight 09 Jan 09PM (last 7).csv") %>%
   select(response_id, weight_daily_national_13plus, weight_state_weekly, weight_state_monthly)
@@ -79,7 +83,8 @@ surveym116 <- read.csv("2022/CovidNearYou Datafile 16 Jan 09PM (last 7).csv") %>
          reason_not_get_covid19_booster_mc_others_before_me,
          reason_not_get_covid19_booster_mc_other_text,
          which_covid19_vaccine,
-         get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, party_id, gender, race, age7)
+         get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, race, 
+         income, party_id, gender, race_recode, educ4, is_essential_worker, age7, age)
 
 surveym116w <- read.csv("2022/CovidNearYou Weight 16 Jan 09PM (last 7).csv") %>%
   select(response_id, weight_daily_national_13plus, weight_state_weekly, weight_state_monthly)
@@ -103,7 +108,8 @@ surveym123 <- read.csv("2022/CovidNearYou Datafile 23 Jan 09PM (last 7).csv") %>
          reason_not_get_covid19_booster_mc_others_before_me,
          reason_not_get_covid19_booster_mc_other_text,
          which_covid19_vaccine,
-         get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, party_id, gender, race, age7)
+         get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, race, 
+         income, party_id, gender, race_recode, educ4, is_essential_worker, age7, age)
 
 surveym123w <- read.csv("2022/CovidNearYou Weight 23 Jan 09PM (last 7).csv") %>%
   select(response_id, weight_daily_national_13plus, weight_state_weekly, weight_state_monthly)
@@ -127,7 +133,8 @@ surveym130 <- read.csv("2022/CovidNearYou Datafile 30 Jan 09PM (last 7).csv") %>
          reason_not_get_covid19_booster_mc_others_before_me,
          reason_not_get_covid19_booster_mc_other_text,
          which_covid19_vaccine,
-         get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, party_id, gender, race, age7)
+         get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, race, 
+         income, party_id, gender, race_recode, educ4, is_essential_worker, age7, age)
 
 surveym130w <- read.csv("2022/CovidNearYou Weight 30 Jan 09PM (last 7).csv") %>%
   select(response_id, weight_daily_national_13plus, weight_state_weekly, weight_state_monthly)
@@ -152,7 +159,8 @@ surveym206 <- read.csv("2022/CovidNearYou Datafile 06 Feb 09PM (last 7).csv") %>
          reason_not_get_covid19_booster_mc_others_before_me,
          reason_not_get_covid19_booster_mc_other_text,
          which_covid19_vaccine,
-         get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, party_id, gender, race, age7)
+         get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, race, 
+         income, party_id, gender, race_recode, educ4, is_essential_worker, age7, age)
 
 surveym206w <- read.csv("2022/CovidNearYou Weight 06 Feb 09PM (last 7).csv") %>%
   select(response_id, weight_daily_national_13plus, weight_state_weekly, weight_state_monthly)
@@ -176,7 +184,8 @@ surveym213 <- read.csv("2022/CovidNearYou Datafile 13 Feb 09PM (last 7).csv") %>
          reason_not_get_covid19_booster_mc_others_before_me,
          reason_not_get_covid19_booster_mc_other_text,
          which_covid19_vaccine,
-         get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, party_id, gender, race, age7)
+         get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, race, 
+         income, party_id, gender, race_recode, educ4, is_essential_worker, age7, age)
 
 surveym213w <- read.csv("2022/CovidNearYou Weight 13 Feb 09PM (last 7).csv") %>%
   select(response_id, weight_daily_national_13plus, weight_state_weekly, weight_state_monthly)
@@ -200,7 +209,8 @@ surveym220 <- read.csv("2022/CovidNearYou Datafile 20 Feb 09PM (last 7).csv") %>
          reason_not_get_covid19_booster_mc_others_before_me,
          reason_not_get_covid19_booster_mc_other_text,
          which_covid19_vaccine,
-         get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, party_id, gender, race, age7)
+         get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, race, 
+         income, party_id, gender, race_recode, educ4, is_essential_worker, age7, age)
 
 surveym220w <- read.csv("2022/CovidNearYou Weight 20 Feb 09PM (last 7).csv") %>%
   select(response_id, weight_daily_national_13plus, weight_state_weekly, weight_state_monthly)
@@ -209,7 +219,8 @@ surveym220 <- surveym220 %>%
   left_join(surveym220w, by = "response_id")
 
 ##---------------MERGE DATA------------------
-twenty22 <- surveym102 %>% 
+# combine data
+twenty22_total <- surveym102 %>% 
   rbind(surveym109) %>% 
   rbind(surveym116) %>% 
   rbind(surveym123) %>% 
@@ -217,12 +228,19 @@ twenty22 <- surveym102 %>%
   rbind(surveym206) %>%
   rbind(surveym213) %>%
   rbind(surveym220) %>% 
+  # make response date into a date 
+  # MEC - ben used start date instead of response date- why? 
+  mutate(response_date = as.Date(response_date)) %>%
+  # select the first 6 weeks of 2022 (Jan 1 to Feb 12th)
+  filter(response_date >= as.Date("2022-01-01")) %>%
+  filter(response_date <= as.Date("2022-02-12"))
+
+twenty22 <- twenty22_total %>% 
   # drop those with no weights 
   drop_na(weight_daily_national_13plus) %>%
-  # make response date into a date and add weeks 
-  mutate(response_date = as.Date(response_date)) %>%
+  # add dividions by week 
   mutate(week = cut.Date(response_date, breaks = "1 week", labels = FALSE)) %>% 
-  # code into vaccinated and unvaccinated
+  # code into vaccinated and unvaccinated - drop those unsure of vaccination 
   filter(get_vaccine_yesno != 3) %>%
   mutate(get_vaccine_yesno = replace(get_vaccine_yesno, get_vaccine_yesno == 1, "Vaccinated")) %>%
   mutate(get_vaccine_yesno = replace(get_vaccine_yesno, get_vaccine_yesno == 2, "Unvaccinated")) %>% 
@@ -235,7 +253,7 @@ analysis <- twenty22 %>%
   # filter for vaccinated 
   filter(get_vaccine_yesno == "Vaccinated")
 
-x <- analysis %>% distinct(reason_not_get_covid19_booster_mc_other_text)
+excluded <- nrow(twenty22_total) - nrow(analysis)
 
 ##-----------------WEIGHTED PERCENTS---------------
 
@@ -372,9 +390,6 @@ percent_likely_vaxtype <- analysis %>%
   mutate(rxn_percent = weighted.mean(reason_not_get_covid19_booster_mc_reaction, weight_daily_national_13plus)) %>% 
   mutate(norisk_percent = weighted.mean(reason_not_get_covid19_booster_mc_not_at_risk, weight_daily_national_13plus)) %>% 
   mutate(oths_percent = weighted.mean(reason_not_get_covid19_booster_mc_others_before_me, weight_daily_national_13plus))
-
-
-# do age and race next! 
 
 ##---------------PLOTS----------------
 # overall - 2022
