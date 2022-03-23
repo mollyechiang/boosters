@@ -530,56 +530,39 @@ distrust_sci_date <- analysis_factored_surv %>%
                                               vartype = "ci", proportion = TRUE, 
                                               prop_method = "beta",  na.rm = TRUE))
 
-
-
-
-
-#use_by_date2<-use_by_date %>%
- # mutate('Among all respondents' = home_test*100, 'Among all respondents upper'= home_test_upp*100, 'Among all respondents lower' = home_test_low*100) %>%
-  # dplyr::select('MMWR Week'=mmwr_date,'Among all respondents','Among all respondents upper', 'Among all respondents lower')
-
-#use_by_date_only_sick2<-use_by_date_only_sick %>%
- # mutate('Among those with COVID-like illness' = home_test*100, 'Among those with COVID-like illness upper'= home_test_upp*100, 'Among those with COVID-like illness lower' = home_test_low*100) %>%
-  #dplyr::select('MMWR Week'=mmwr_date,'Among those with COVID-like illness','Among those with COVID-like illness upper', 'Among those with COVID-like illness lower')
-
-#use_by_date_only_tested2<-use_by_date_only_tested %>%
- # mutate('Among those who report any testing' = home_test*100, 'Among those who report any testing upper'= home_test_upp*100, 'Among those who report any testing lower' = home_test_low*100) %>%
-  #dplyr::select('MMWR Week'=mmwr_date,'Among those who report any testing','Among those who report any testing upper', 'Among those who report any testing lower')
-
-#image_df1<-merge(use_by_date2,use_by_date_only_sick2, by="MMWR Week", all.x=TRUE,all.y=TRUE)
-#image_df2<-merge(image_df1,use_by_date_only_tested2, by="MMWR Week", all.x=TRUE,all.y=TRUE)
-#write.csv(image_df2,"image_data_3_17_22.csv")
-
 geom.text.size = 3.2
 theme.size = (14/5) * geom.text.size
 break.vec <- c(seq(from = as.Date("2022-01-01"), to = as.Date("2022-02-12"),
                    by = "1 week"))
 
-ggplot()+
+ggplot() + 
   geom_line(aes(y=side_ef*100,x=response_date, color="Side Effects"), data=side_ef_date) +
   geom_point(aes(y=side_ef*100,x=response_date, color="Side Effects"), data=side_ef_date) + 
-  geom_ribbon(aes(ymin=side_ef_low*100,ymax=side_ef_upp*100, x=response_date, fill="Side Effects"),alpha=0.3, data=side_ef_date) +
+  geom_ribbon(aes(ymin=side_ef_low*100,ymax=side_ef_upp*100, x=response_date, fill="Side Effects"),alpha=0.1, data=side_ef_date) +
   geom_line(aes(y=got_covandvax*100,x=response_date, color="Got COVID and Vax"), data=got_covandvax_date) +
   geom_point(aes(y=got_covandvax*100,x=response_date, color="Got COVID and Vax"), data=got_covandvax_date) + 
-  geom_ribbon(aes(ymin=got_covandvax_low*100,ymax=got_covandvax_upp*100, x=response_date, fill="Got COVID and Vax"),alpha=0.3, data=got_covandvax_date) +
+  geom_ribbon(aes(ymin=got_covandvax_low*100,ymax=got_covandvax_upp*100, x=response_date, fill="Got COVID and Vax"),alpha=0.1, data=got_covandvax_date) +
   geom_line(aes(y=too_pol*100,x=response_date, color="Too Political"), data=too_pol_date) +
   geom_point(aes(y=too_pol*100,x=response_date, color="Too Political"), data=too_pol_date) + 
-  geom_ribbon(aes(ymin=too_pol_low*100,ymax=too_pol_upp*100, x=response_date, fill="Too Political"),alpha=0.3, data=too_pol_date) +
+  geom_ribbon(aes(ymin=too_pol_low*100,ymax=too_pol_upp*100, x=response_date, fill="Too Political"),alpha=0.1, data=too_pol_date) +
   geom_line(aes(y=distrust_gov*100,x=response_date, color="Distrust Government"), data=distrust_gov_date) +
   geom_point(aes(y=distrust_gov*100,x=response_date, color="Distrust Government"), data=distrust_gov_date) + 
-  geom_ribbon(aes(ymin=distrust_gov_low*100,ymax=distrust_gov_upp*100, x=response_date, fill="Distrust Government"),alpha=0.3, data=distrust_gov_date) +
+  geom_ribbon(aes(ymin=distrust_gov_low*100,ymax=distrust_gov_upp*100, x=response_date, fill="Distrust Government"),alpha=0.1, data=distrust_gov_date) +
   geom_line(aes(y=distrust_sci*100,x=response_date, color="Distrust Scientists"), data=distrust_sci_date) +
   geom_point(aes(y=distrust_sci*100,x=response_date, color="Distrust Scientists"), data=distrust_sci_date) + 
-  geom_ribbon(aes(ymin=distrust_sci_low*100,ymax=distrust_sci_upp*100, x=response_date, fill="Distrust Scientists"),alpha=0.3, data=distrust_sci_date) +
+  geom_ribbon(aes(ymin=distrust_sci_low*100,ymax=distrust_sci_upp*100, x=response_date, fill="Distrust Scientists"),alpha=0.1, data=distrust_sci_date) +
   theme_classic() +
   #scale_color_manual(values = c("#4E79A6","#F28E2C","#E15758"), name = "At-Home Test Use", limits = c("Among those who report any testing","Among those with COVID-like illness","Among all respondents"))+
   #scale_fill_manual(values = c("#4E79A6","#F28E2C","#E15758"), name = "At-Home Test Use", limits = c("Among those who report any testing","Among those with COVID-like illness","Among all respondents"))+
-  scale_y_continuous(limit=c(0,100),expand = c(0, 0))+
+  scale_y_continuous(limit=c(5,55),expand = c(0, 0))+
   scale_x_date(date_labels = "%b %d", breaks=break.vec, limits = c(as.Date("2022-01-01"),as.Date("2022-02-12")))+
-  ylab("Percent Respondents (%)") +
-  xlab("Date") +
+  labs(x = "Date", 
+       y= "Percent Respondents (%)",
+       color = "Reason",
+       title = "Reasons Vaccinated Respondents Cited for Not Getting Boosted\nOver the First 6 Weeks of 2022") +
   theme(legend.position = "right") +
-  theme(legend.text=element_text(size=theme.size))
+  theme(legend.text=element_text(size=theme.size)) +
+  guides(fill = FALSE)
 
 ##---------------PLOTS----------------
 # overall - 2022
