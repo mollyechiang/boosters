@@ -1,11 +1,12 @@
 # libraries 
-library(janitor)
-library(stringr)
-library(scales)
-library(reshape2)
-library(ggpubr)
-library(geofacet)
-library(srvyr)
+library(janitor) # for cleaning read-in data
+ # library(stringr)
+library(scales) # for visaluzations 
+library(reshape2) # for melt
+# library(ggpubr)
+# library(geofacet)
+library(srvyr) # for survey analysis
+library(zoo) # for rolling means 
 library(tidyverse)
 
 # covid_booster_likely_get 
@@ -224,6 +225,32 @@ surveym220w <- read.csv("2022/CovidNearYou Weight 20 Feb 09PM (last 7).csv") %>%
 surveym220 <- surveym220 %>% 
   left_join(surveym220w, by = "response_id")
 
+surveym227 <- read.csv("2022/CovidNearYou Datafile 27 Feb 09PM (last 7).csv") %>%
+  select(response_id, getting_covid19_booster, covid19_booster_likely_to_get, 
+         reason_not_get_covid19_booster_mc_inconvenient,
+         reason_not_get_covid19_booster_mc_something_else,
+         reason_not_get_covid19_booster_mc_too_new,
+         reason_not_get_covid19_booster_mc_side_effect,
+         reason_not_get_covid19_booster_mc_threat_exaggerated,
+         reason_not_get_covid19_booster_mc_distrust_government,
+         reason_not_get_covid19_booster_mc_distrust_scientist,
+         reason_not_get_covid19_booster_mc_too_political,
+         reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated,
+         reason_not_get_covid19_booster_mc_reaction,
+         reason_not_get_covid19_booster_mc_not_at_risk,
+         reason_not_get_covid19_booster_mc_others_before_me,
+         reason_not_get_covid19_booster_mc_other_text,
+         which_covid19_vaccine,
+         received_all_covid19_required_doses,
+         get_vaccine_yesno, state, zip_code, start_date, response_date, ideology, race, 
+         income, party_id, gender, race_recode, educ4, is_essential_worker, age7, age)
+
+surveym227w <- read.csv("2022/CovidNearYou Weight 27 Feb 09PM (last 7).csv") %>%
+  select(response_id, weight_daily_national_13plus, weight_state_weekly, weight_state_monthly)
+
+surveym227 <- surveym227 %>% 
+  left_join(surveym227w, by = "response_id")
+
 ##---------------MERGE DATA------------------
 # combine data
 twenty22_total <- surveym102 %>% 
@@ -234,12 +261,13 @@ twenty22_total <- surveym102 %>%
   rbind(surveym206) %>%
   rbind(surveym213) %>%
   rbind(surveym220) %>% 
+  rbind(surveym227) %>% 
   # make response date into a date 
   # MEC - ben used start date instead of response date- why? 
   mutate(response_date = as.Date(response_date)) %>%
-  # select the first 6 weeks of 2022 (Jan 1 to Feb 12th)
+  # select the first 8 weeks of 2022 (Jan 1 to Feb 26th)
   filter(response_date >= as.Date("2022-01-01")) %>%
-  filter(response_date <= as.Date("2022-02-12"))
+  filter(response_date <= as.Date("2022-02-26"))
 
 twenty22 <- twenty22_total %>% 
   # drop those with no weights 
@@ -250,7 +278,12 @@ twenty22 <- twenty22_total %>%
   mutate(get_vaccine_yesno = replace(get_vaccine_yesno, get_vaccine_yesno == 1, "Vaccinated")) %>%
   mutate(get_vaccine_yesno = replace(get_vaccine_yesno, get_vaccine_yesno == 2, "Unvaccinated")) %>% 
   select(-start_date) %>% 
-  arrange(response_date)
+  # filter for only adults (age 18 and older)
+  filter(age >= 18) %>% 
+  arrange(response_date) %>% 
+  group_by(response_date) %>% 
+  mutate(weight_daily_national_18plus = weight_daily_national_13plus * (n()/sum(weight_daily_national_13plus))) %>% 
+  ungroup() 
 
 analysis <- twenty22 %>% 
   # filter for only those not willing or unsure of booster (only ones who were asked the questions)
@@ -260,7 +293,7 @@ analysis <- twenty22 %>%
 
 excluded <- nrow(twenty22_total) - nrow(analysis)
 
-##-----------------WEIGHTED PERCENTS---------------
+##-----------------WEIGHTED PERCENTS - OLD---------------
 
 # overall in 2022
 percent_likely <- analysis %>%
@@ -474,11 +507,12 @@ analysis_factored <- analysis_factored  %>% select(response_id, response_date, w
                             reason_not_get_covid19_booster_mc_other_text,
                             get_vaccine_yesno, state, zip_code, race_recode, gender, party, which_vax, edu,
                             essential_worker, household_income, vaccination_status, age_group,
-                            weight_daily_national_13plus, weight_state_weekly)
+                            weight_daily_national_18plus, weight_state_weekly)
 
 ##-----------------SURVEY ANALYSIS---------------
 
-analysis_factored_surv <- analysis_factored %>% as_survey_design(ids = 1, weights = weight_daily_national_13plus)
+# make a survey design object
+analysis_factored_surv <- analysis_factored %>% as_survey_design(ids = 1, weights = weight_daily_national_18plus)
 
 # MEC - come back to the chi squared test when deciding what to compare!!
 #select variables/filter to include
@@ -500,71 +534,292 @@ analysis_factored_surv <- analysis_factored %>% as_survey_design(ids = 1, weight
 
 ##-----------------LONGITUDINAL ANALYSIS---------------
 
-# MEC - filter for anything?
+# calculate average percents and upper and lower CIs for different reasons
 side_ef_date <- analysis_factored_surv %>%
   group_by(response_date) %>%
   dplyr::summarise(side_ef = survey_mean(reason_not_get_covid19_booster_mc_side_effect, vartype = "ci", proportion = TRUE, 
-                                         prop_method = "beta",  na.rm = TRUE))
+                                         prop_method = "beta",  na.rm = TRUE)) %>% 
+  mutate(side_ef_7da = rollmean(side_ef, k = 7, fill = NA)) %>%
+  mutate(side_ef_upp_7da = rollmean(side_ef_upp, k = 7, fill = NA)) %>% 
+  mutate(side_ef_low_7da = rollmean(side_ef_low, k = 7, fill = NA))
 
 got_covandvax_date <- analysis_factored_surv %>%
   group_by(response_date) %>%
   dplyr::summarise(got_covandvax = survey_mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated,
                                                vartype = "ci", proportion = TRUE, 
-                                               prop_method = "beta",  na.rm = TRUE))
+                                               prop_method = "beta",  na.rm = TRUE)) %>% 
+  mutate(got_covandvax_7da = rollmean(got_covandvax, k = 7, fill = NA)) %>%
+  mutate(got_covandvax_upp_7da = rollmean(got_covandvax_upp, k = 7, fill = NA)) %>% 
+  mutate(got_covandvax_low_7da = rollmean(got_covandvax_low, k = 7, fill = NA))
 
 too_pol_date <- analysis_factored_surv %>%
   group_by(response_date) %>%
   dplyr::summarise(too_pol = survey_mean(reason_not_get_covid19_booster_mc_too_political,
                                          vartype = "ci", proportion = TRUE, 
-                                         prop_method = "beta",  na.rm = TRUE))
+                                         prop_method = "beta",  na.rm = TRUE)) %>% 
+  mutate(too_pol_7da = rollmean(too_pol, k = 7, fill = NA)) %>%
+  mutate(too_pol_upp_7da = rollmean(too_pol_upp, k = 7, fill = NA)) %>% 
+  mutate(too_pol_low_7da = rollmean(too_pol_low, k = 7, fill = NA))
 
 distrust_gov_date <- analysis_factored_surv %>%
   group_by(response_date) %>%
   dplyr::summarise(distrust_gov = survey_mean(reason_not_get_covid19_booster_mc_distrust_government,
                                          vartype = "ci", proportion = TRUE, 
-                                         prop_method = "beta",  na.rm = TRUE))
+                                         prop_method = "beta",  na.rm = TRUE)) %>% 
+  mutate(distrust_gov_7da = rollmean(distrust_gov, k = 7, fill = NA)) %>%
+  mutate(distrust_gov_upp_7da = rollmean(distrust_gov_upp, k = 7, fill = NA)) %>% 
+  mutate(distrust_gov_low_7da = rollmean(distrust_gov_low, k = 7, fill = NA))
 
 distrust_sci_date <- analysis_factored_surv %>%
   group_by(response_date) %>%
   dplyr::summarise(distrust_sci = survey_mean(reason_not_get_covid19_booster_mc_distrust_scientist,
                                               vartype = "ci", proportion = TRUE, 
-                                              prop_method = "beta",  na.rm = TRUE))
+                                              prop_method = "beta",  na.rm = TRUE)) %>% 
+  mutate(distrust_sci_7da = rollmean(distrust_sci, k = 7, fill = NA)) %>%
+  mutate(distrust_sci_upp_7da = rollmean(distrust_sci_upp, k = 7, fill = NA)) %>% 
+  mutate(distrust_sci_low_7da = rollmean(distrust_sci_low, k = 7, fill = NA))
 
+inconv_date <- analysis_factored_surv %>%
+  group_by(response_date) %>%
+  dplyr::summarise(inconv = survey_mean(reason_not_get_covid19_booster_mc_inconvenient,
+                                              vartype = "ci", proportion = TRUE, 
+                                              prop_method = "beta",  na.rm = TRUE)) %>% 
+  mutate(inconv_7da = rollmean(inconv, k = 7, fill = NA)) %>%
+  mutate(inconv_upp_7da = rollmean(inconv, k = 7, fill = NA)) %>% 
+  mutate(inconv_low_7da = rollmean(inconv, k = 7, fill = NA))
+
+no_risk_date <- analysis_factored_surv %>%
+  group_by(response_date) %>%
+  dplyr::summarise(no_risk = survey_mean(reason_not_get_covid19_booster_mc_not_at_risk,
+                                              vartype = "ci", proportion = TRUE, 
+                                              prop_method = "beta",  na.rm = TRUE)) %>% 
+  mutate(no_risk_7da = rollmean(no_risk, k = 7, fill = NA)) %>%
+  mutate(no_risk_upp_7da = rollmean(no_risk_upp, k = 7, fill = NA)) %>% 
+  mutate(no_risk_low_7da = rollmean(no_risk_low, k = 7, fill = NA))
+
+
+
+# setting info for plot 
 geom.text.size = 3.2
 theme.size = (14/5) * geom.text.size
-break.vec <- c(seq(from = as.Date("2022-01-01"), to = as.Date("2022-02-12"),
+break.vec <- c(seq(from = as.Date("2022-01-05"), to = as.Date("2022-02-23"),
                    by = "1 week"))
 
+# plot
 ggplot() + 
-  geom_line(aes(y=side_ef*100,x=response_date, color="Side Effects"), data=side_ef_date) +
-  geom_point(aes(y=side_ef*100,x=response_date, color="Side Effects"), data=side_ef_date) + 
-  geom_ribbon(aes(ymin=side_ef_low*100,ymax=side_ef_upp*100, x=response_date, fill="Side Effects"),alpha=0.1, data=side_ef_date) +
-  geom_line(aes(y=got_covandvax*100,x=response_date, color="Got COVID and Vax"), data=got_covandvax_date) +
-  geom_point(aes(y=got_covandvax*100,x=response_date, color="Got COVID and Vax"), data=got_covandvax_date) + 
-  geom_ribbon(aes(ymin=got_covandvax_low*100,ymax=got_covandvax_upp*100, x=response_date, fill="Got COVID and Vax"),alpha=0.1, data=got_covandvax_date) +
-  geom_line(aes(y=too_pol*100,x=response_date, color="Too Political"), data=too_pol_date) +
-  geom_point(aes(y=too_pol*100,x=response_date, color="Too Political"), data=too_pol_date) + 
-  geom_ribbon(aes(ymin=too_pol_low*100,ymax=too_pol_upp*100, x=response_date, fill="Too Political"),alpha=0.1, data=too_pol_date) +
-  geom_line(aes(y=distrust_gov*100,x=response_date, color="Distrust Government"), data=distrust_gov_date) +
-  geom_point(aes(y=distrust_gov*100,x=response_date, color="Distrust Government"), data=distrust_gov_date) + 
-  geom_ribbon(aes(ymin=distrust_gov_low*100,ymax=distrust_gov_upp*100, x=response_date, fill="Distrust Government"),alpha=0.1, data=distrust_gov_date) +
-  geom_line(aes(y=distrust_sci*100,x=response_date, color="Distrust Scientists"), data=distrust_sci_date) +
-  geom_point(aes(y=distrust_sci*100,x=response_date, color="Distrust Scientists"), data=distrust_sci_date) + 
-  geom_ribbon(aes(ymin=distrust_sci_low*100,ymax=distrust_sci_upp*100, x=response_date, fill="Distrust Scientists"),alpha=0.1, data=distrust_sci_date) +
+  # side ef
+  geom_line(aes(y=side_ef_7da*100,x=response_date, color="Side Effects"), data=side_ef_date) +
+  geom_point(aes(y=side_ef_7da*100,x=response_date, color="Side Effects"), data=side_ef_date) + 
+  geom_ribbon(aes(ymin=side_ef_low_7da*100,ymax=side_ef_upp_7da*100, x=response_date, fill="Side Effects"),alpha=0.1, data=side_ef_date) +
+  # got cov and vax 
+  geom_line(aes(y=got_covandvax_7da*100,x=response_date, color="Got COVID and Vax"), data=got_covandvax_date) +
+  geom_point(aes(y=got_covandvax_7da*100,x=response_date, color="Got COVID and Vax"), data=got_covandvax_date) + 
+  geom_ribbon(aes(ymin=got_covandvax_low_7da*100,ymax=got_covandvax_upp_7da*100, x=response_date, fill="Got COVID and Vax"),alpha=0.1, data=got_covandvax_date) +
+  # too political
+  geom_line(aes(y=too_pol_7da*100,x=response_date, color="Too Political"), data=too_pol_date) +
+  geom_point(aes(y=too_pol_7da*100,x=response_date, color="Too Political"), data=too_pol_date) + 
+  geom_ribbon(aes(ymin=too_pol_low_7da*100,ymax=too_pol_upp_7da*100, x=response_date, fill="Too Political"),alpha=0.1, data=too_pol_date) +
+  # distrust gov 
+  #geom_line(aes(y=distrust_gov_7da*100,x=response_date, color="Distrust Government"), data=distrust_gov_date) +
+  #geom_point(aes(y=distrust_gov_7da*100,x=response_date, color="Distrust Government"), data=distrust_gov_date) + 
+  #geom_ribbon(aes(ymin=distrust_gov_low_7da*100,ymax=distrust_gov_upp_7da*100, x=response_date, fill="Distrust Government"),alpha=0.1, data=distrust_gov_date) +
+  # distrust sci
+  #geom_line(aes(y=distrust_sci_7da*100,x=response_date, color="Distrust Scientists"), data=distrust_sci_date) +
+  #geom_point(aes(y=distrust_sci_7da*100,x=response_date, color="Distrust Scientists"), data=distrust_sci_date) + 
+  #geom_ribbon(aes(ymin=distrust_sci_low_7da*100,ymax=distrust_sci_upp_7da*100, x=response_date, fill="Distrust Scientists"),alpha=0.1, data=distrust_sci_date) +
+  # inconv
+  geom_line(aes(y=inconv_7da*100,x=response_date, color="Inconvenient"), data=inconv_date) +
+  geom_point(aes(y=inconv_7da*100,x=response_date, color="Inconvenient"), data=inconv_date) + 
+  geom_ribbon(aes(ymin=inconv_low_7da*100,ymax=inconv_upp_7da*100, x=response_date, fill="Inconvenient"),alpha=0.1, data=inconv_date) +
+  # no risk
+  geom_line(aes(y=no_risk_7da*100,x=response_date, color="Not at Risk"), data=no_risk_date) +
+  geom_point(aes(y=no_risk_7da*100,x=response_date, color="Not at Risk"), data=no_risk_date) + 
+  geom_ribbon(aes(ymin=no_risk_low_7da*100,ymax=no_risk_upp_7da*100, x=response_date, fill="Not at Risk"),alpha=0.1, data=no_risk_date) +
+  
   theme_classic() +
   #scale_color_manual(values = c("#4E79A6","#F28E2C","#E15758"), name = "At-Home Test Use", limits = c("Among those who report any testing","Among those with COVID-like illness","Among all respondents"))+
   #scale_fill_manual(values = c("#4E79A6","#F28E2C","#E15758"), name = "At-Home Test Use", limits = c("Among those who report any testing","Among those with COVID-like illness","Among all respondents"))+
-  scale_y_continuous(limit=c(5,55),expand = c(0, 0))+
-  scale_x_date(date_labels = "%b %d", breaks=break.vec, limits = c(as.Date("2022-01-01"),as.Date("2022-02-12")))+
-  labs(x = "Date", 
-       y= "Percent Respondents (%)",
+  scale_y_continuous(limit=c(0,55),expand = c(0, 0))+
+  scale_x_date(date_labels = "%b %d", breaks=break.vec, limits = c(as.Date("2022-01-05"),as.Date("2022-02-23")))+
+  labs(x = " ", 
+       y= "Percent of Respondents (%)",
        color = "Reason",
-       title = "Reasons Vaccinated Respondents Cited for Not Getting Boosted\nOver the First 6 Weeks of 2022") +
+       title = "Reasons Vaccinated Respondents Cited for Not Getting Boosted\nin the First 8 Weeks of 2022",
+       subtitle = "7-day Rolling Averages with 95% Confidence Intervals") +
   theme(legend.position = "right") +
   theme(legend.text=element_text(size=theme.size)) +
   guides(fill = FALSE)
 
-##---------------PLOTS----------------
+
+##---------------PLOTS - NEW OVERALL----------------
+# get the overall percents and cis for each response
+overall <- analysis_factored_surv %>%
+  dplyr::summarise(inconv = survey_mean(reason_not_get_covid19_booster_mc_inconvenient, vartype = "ci", 
+                                        proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   someth_else = survey_mean(reason_not_get_covid19_booster_mc_something_else, vartype = "ci", 
+                                        proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   too_new = survey_mean(reason_not_get_covid19_booster_mc_too_new, vartype = "ci", 
+                                             proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   side_ef = survey_mean(reason_not_get_covid19_booster_mc_side_effect, vartype = "ci", 
+                                             proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   threat_exag = survey_mean(reason_not_get_covid19_booster_mc_threat_exaggerated, vartype = "ci", 
+                                             proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   dis_gov = survey_mean(reason_not_get_covid19_booster_mc_distrust_government, vartype = "ci", 
+                                             proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   dis_sci = survey_mean(reason_not_get_covid19_booster_mc_distrust_scientist, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   too_pol = survey_mean(reason_not_get_covid19_booster_mc_too_political, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   got_covandvax = survey_mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   rxn = survey_mean(reason_not_get_covid19_booster_mc_reaction, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   no_risk = survey_mean(reason_not_get_covid19_booster_mc_not_at_risk, vartype = "ci", 
+                                               proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   others = survey_mean(reason_not_get_covid19_booster_mc_others_before_me, vartype = "ci", 
+                                               proportion = TRUE, prop_method = "beta",  na.rm = TRUE))
+
+# list of reasons
+columns_list <- c("inconvenient", "something else", "too new", "side effects", "threat exaggerated",
+             "distrust gov", "distrust science", "too political", "got COVID and vaccine", "reaction",
+             "not at risk", "others before me")
+
+# make a dataframe of the reasons and their mean value
+values <- cbind(overall$inconv, overall$someth_else, overall$too_new, overall$side_ef, 
+                overall$threat_exag, overall$dis_gov, overall$dis_sci, overall$too_pol, 
+                overall$got_covandvax, overall$rxn, overall$no_risk, overall$others)
+
+# add row of the nammes to the values df
+colnames(values) <- columns_list
+
+# make data vertical and rename columns 
+values <- values %>% 
+  melt(id = NULL)%>% 
+  rename(reason = Var2) %>% 
+  select(-Var1)
+
+# make a list of the upper cis and lower cis 
+upps <- list(overall$inconv_upp, overall$someth_else_upp, overall$too_new_upp, overall$side_ef_upp, 
+             overall$threat_exag_upp, overall$dis_gov_upp, overall$dis_sci_upp, overall$too_pol_upp, 
+             overall$got_covandvax_upp, overall$rxn_upp, overall$no_risk_upp, overall$others_upp)
+
+lows <- list(overall$inconv_low, overall$someth_else_low, overall$too_new_low, overall$side_ef_low, 
+             overall$threat_exag_low, overall$dis_gov_low, overall$dis_sci_low, overall$too_pol_low, 
+             overall$got_covandvax_low, overall$rxn_low, overall$no_risk_low, overall$others_low)
+
+
+# add upper and lower cis as columns in values df
+values <- values %>% 
+  mutate(upper_ci = unlist(upps)) %>% 
+  mutate(lower_ci = unlist(lows))
+
+# plot - with error bars
+values %>% 
+  mutate(value = value*100) %>% 
+  mutate(upper_ci = upper_ci*100) %>% 
+  mutate(lower_ci = lower_ci*100) %>% 
+  ggplot(aes(x = reorder(reason,value), y = value, fill = reason)) +
+  geom_col() +
+  geom_errorbar(aes(ymin=lower_ci, ymax=upper_ci), width=.2,
+               position=position_dodge(.9)) +
+  labs(x = " ",
+       y = "Percent of Respondents",
+       title = "Reasons Vaccinated Respondents Cited For Not Getting a COVID-19 Booster",
+       subtitle = "Momentive Survey Data From the First 8 Weeks of 2022 (Jan 1 to Feb 26)") +
+  theme_minimal() +
+  ylim(0,40) + 
+  coord_flip() + 
+  theme(plot.title = element_text(face = "bold")) +
+  theme(legend.position = "none")
+
+##---------------PLOTS - NEW WILLINGNESS----------------
+# get the overall percents and cis for each response
+likely_get <- analysis_factored_surv %>%
+  group_by(covid19_booster_likely_to_get) %>%
+  dplyr::summarise(inconv = survey_mean(reason_not_get_covid19_booster_mc_inconvenient, vartype = "ci", 
+                                        proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   someth_else = survey_mean(reason_not_get_covid19_booster_mc_something_else, vartype = "ci", 
+                                             proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   too_new = survey_mean(reason_not_get_covid19_booster_mc_too_new, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   side_ef = survey_mean(reason_not_get_covid19_booster_mc_side_effect, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   threat_exag = survey_mean(reason_not_get_covid19_booster_mc_threat_exaggerated, vartype = "ci", 
+                                             proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   dis_gov = survey_mean(reason_not_get_covid19_booster_mc_distrust_government, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   dis_sci = survey_mean(reason_not_get_covid19_booster_mc_distrust_scientist, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   too_pol = survey_mean(reason_not_get_covid19_booster_mc_too_political, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   got_covandvax = survey_mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, vartype = "ci", 
+                                               proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   rxn = survey_mean(reason_not_get_covid19_booster_mc_reaction, vartype = "ci", 
+                                     proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   no_risk = survey_mean(reason_not_get_covid19_booster_mc_not_at_risk, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   others = survey_mean(reason_not_get_covid19_booster_mc_others_before_me, vartype = "ci", 
+                                        proportion = TRUE, prop_method = "beta",  na.rm = TRUE))
+
+# list of reasons
+columns_list <- c("inconvenient", "something else", "too new", "side effects", "threat exaggerated",
+                  "distrust gov", "distrust science", "too political", "got COVID and vaccine", "reaction",
+                  "not at risk", "others before me")
+
+# make a dataframe of the reasons and their mean value
+likely_get_values <- cbind(likely_get$inconv, likely_get$someth_else, likely_get$too_new, likely_get$side_ef, 
+                likely_get$threat_exag, likely_get$dis_gov, likely_get$dis_sci, likely_get$too_pol, 
+                likely_get$got_covandvax, likely_get$rxn, likely_get$no_risk, likely_get$others)
+
+# add row of the nammes to the values df
+colnames(likely_get_values) <- columns_list
+
+# make data vertical and rename columns 
+likely_get_values <- as.data.frame(likely_get_values) %>% 
+  mutate(covid19_booster_likely_to_get = c(2,3)) %>% 
+  melt(id = 'covid19_booster_likely_to_get') %>% 
+  rename(reason = variable)
+
+# make a list of the upper cis and lower cis 
+lg_upps <- list(likely_get$inconv_upp, likely_get$someth_else_upp, likely_get$too_new_upp, likely_get$side_ef_upp, 
+             likely_get$threat_exag_upp, likely_get$dis_gov_upp, likely_get$dis_sci_upp, likely_get$too_pol_upp, 
+             likely_get$got_covandvax_upp, likely_get$rxn_upp, likely_get$no_risk_upp, likely_get$others_upp)
+
+lg_lows <- list(likely_get$inconv_low, likely_get$someth_else_low, likely_get$too_new_low, likely_get$side_ef_low, 
+             likely_get$threat_exag_low, likely_get$dis_gov_low, likely_get$dis_sci_low, likely_get$too_pol_low, 
+             likely_get$got_covandvax_low, likely_get$rxn_low, likely_get$no_risk_low, likely_get$others_low)
+
+
+# add upper and lower cis as columns in values df
+likely_get_values <- likely_get_values %>% 
+  mutate(upper_ci = unlist(lg_upps)) %>% 
+  mutate(lower_ci = unlist(lg_lows))
+
+# plot - with error bars
+likely_get_values %>% 
+  mutate(covid19_booster_likely_to_get = replace(covid19_booster_likely_to_get, 
+                                                 covid19_booster_likely_to_get == 2, "Not Willing")) %>%
+  mutate(covid19_booster_likely_to_get = replace(covid19_booster_likely_to_get, 
+                                                 covid19_booster_likely_to_get == 3, "Not Sure")) %>% 
+  mutate(value = value*100) %>% 
+  mutate(upper_ci = upper_ci*100) %>% 
+  mutate(lower_ci = lower_ci*100) %>% 
+  ggplot(aes(x = reason, y = value, fill = covid19_booster_likely_to_get)) +
+  geom_col(position = "dodge") +
+  geom_errorbar(aes(ymin=lower_ci, ymax=upper_ci), width=.2,
+                position=position_dodge(.9)) +
+  labs(x = " ",
+       y = "Percent of Respondents",
+       title = "Reasons Vaccinated Respondents Cited For Not Getting a\nCOVID-19 Booster, By Willingness to be Boosted",
+       subtitle = "Momentive Survey Data From the First 8 Weeks of 2022 (Jan 1 to Feb 26)",
+       fill = "Willingness to be Boosted") +
+  theme_minimal() +
+  ylim(0,50) + 
+  coord_flip() + 
+  theme(plot.title = element_text(face = "bold"))
+
+
+##---------------PLOTS - OLD----------------
 # overall - 2022
 percent_likely %>% 
   rename("inconvenient" = incv_percent,
@@ -745,7 +1000,6 @@ percent_likely_age %>%
   theme_minimal() +
   theme(plot.title = element_text(face = "bold")) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-
 
 
 
