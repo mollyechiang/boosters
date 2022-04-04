@@ -1,10 +1,7 @@
 # libraries 
 library(janitor) # for cleaning read-in data
- # library(stringr)
 library(scales) # for visaluzations 
 library(reshape2) # for melt
-# library(ggpubr)
-# library(geofacet)
 library(srvyr) # for survey analysis
 library(zoo) # for rolling means 
 library(tidyverse)
@@ -291,6 +288,12 @@ analysis <- twenty22 %>%
   # filter for vaccinated 
   filter(get_vaccine_yesno == "Vaccinated")
 
+# of people who are not willing or unsure of booster:
+num_notwilling <- analysis %>% filter(covid19_booster_likely_to_get == 2) %>% nrow()
+  # 5272 are not willing 
+num_unsure <- analysis %>% filter(covid19_booster_likely_to_get == 3) %>% nrow()
+  # 8676 are unsure - big category!
+
 excluded <- nrow(twenty22_total) - nrow(analysis)
 
 ##-----------------WEIGHTED PERCENTS - OLD---------------
@@ -514,24 +517,6 @@ analysis_factored <- analysis_factored  %>% select(response_id, response_date, w
 # make a survey design object
 analysis_factored_surv <- analysis_factored %>% as_survey_design(ids = 1, weights = weight_daily_national_18plus)
 
-# MEC - come back to the chi squared test when deciding what to compare!!
-#select variables/filter to include
-# df_chi <- analysis_factored %>%
-  # filter(home_test==1 | home_test ==0)
-
-#drop empty levels for chi square
-#df_chi$race <- droplevels(df_chi$race)
-#df_chi$gender <- droplevels(df_chi$gender)
-#df_chi$edu <- droplevels(df_chi$edu)
-#df_chi$age_group <- droplevels(df_chi$age_group)
-#df_chi$household_income <- droplevels(df_chi$household_income)
-#df_chi$vaccination_status <- droplevels(df_chi$vaccination_status)
-#df_chi$essential_worker <- droplevels(df_chi$essential_worker)
-
-#format  explicitely as survey
-#df_chi <- df_chi %>% 
-  #as_survey_design(ids = 1, weights = weight_daily_national_13plus)
-
 ##-----------------LONGITUDINAL ANALYSIS---------------
 
 # calculate average percents and upper and lower CIs for different reasons
@@ -585,8 +570,8 @@ inconv_date <- analysis_factored_surv %>%
                                               vartype = "ci", proportion = TRUE, 
                                               prop_method = "beta",  na.rm = TRUE)) %>% 
   mutate(inconv_7da = rollmean(inconv, k = 7, fill = NA)) %>%
-  mutate(inconv_upp_7da = rollmean(inconv, k = 7, fill = NA)) %>% 
-  mutate(inconv_low_7da = rollmean(inconv, k = 7, fill = NA))
+  mutate(inconv_upp_7da = rollmean(inconv_upp, k = 7, fill = NA)) %>% 
+  mutate(inconv_low_7da = rollmean(inconv_low, k = 7, fill = NA))
 
 no_risk_date <- analysis_factored_surv %>%
   group_by(response_date) %>%
@@ -596,8 +581,6 @@ no_risk_date <- analysis_factored_surv %>%
   mutate(no_risk_7da = rollmean(no_risk, k = 7, fill = NA)) %>%
   mutate(no_risk_upp_7da = rollmean(no_risk_upp, k = 7, fill = NA)) %>% 
   mutate(no_risk_low_7da = rollmean(no_risk_low, k = 7, fill = NA))
-
-
 
 # setting info for plot 
 geom.text.size = 3.2
@@ -637,9 +620,7 @@ ggplot() +
   geom_ribbon(aes(ymin=no_risk_low_7da*100,ymax=no_risk_upp_7da*100, x=response_date, fill="Not at Risk"),alpha=0.1, data=no_risk_date) +
   
   theme_classic() +
-  #scale_color_manual(values = c("#4E79A6","#F28E2C","#E15758"), name = "At-Home Test Use", limits = c("Among those who report any testing","Among those with COVID-like illness","Among all respondents"))+
-  #scale_fill_manual(values = c("#4E79A6","#F28E2C","#E15758"), name = "At-Home Test Use", limits = c("Among those who report any testing","Among those with COVID-like illness","Among all respondents"))+
-  scale_y_continuous(limit=c(0,55),expand = c(0, 0))+
+  scale_y_continuous(limit=c(-2,55),expand = c(0, 0))+
   scale_x_date(date_labels = "%b %d", breaks=break.vec, limits = c(as.Date("2022-01-05"),as.Date("2022-02-23")))+
   labs(x = " ", 
        y= "Percent of Respondents (%)",
@@ -647,7 +628,7 @@ ggplot() +
        title = "Reasons Vaccinated Respondents Cited for Not Getting Boosted\nin the First 8 Weeks of 2022",
        subtitle = "7-day Rolling Averages with 95% Confidence Intervals") +
   theme(legend.position = "right") +
-  theme(legend.text=element_text(size=theme.size)) +
+  theme(legend.text=element_text(size=theme.size), plot.title = element_text(face = "bold")) +
   guides(fill = FALSE)
 
 
@@ -718,12 +699,12 @@ values %>%
   mutate(value = value*100) %>% 
   mutate(upper_ci = upper_ci*100) %>% 
   mutate(lower_ci = lower_ci*100) %>% 
-  ggplot(aes(x = reorder(reason,value), y = value, fill = reason)) +
+  ggplot(aes(x = reorder(reason,value), y = value)) +
   geom_col() +
   geom_errorbar(aes(ymin=lower_ci, ymax=upper_ci), width=.2,
                position=position_dodge(.9)) +
   labs(x = " ",
-       y = "Percent of Respondents",
+       y = "Percent of Respondents (%)",
        title = "Reasons Vaccinated Respondents Cited For Not Getting a COVID-19 Booster",
        subtitle = "Momentive Survey Data From the First 8 Weeks of 2022 (Jan 1 to Feb 26)") +
   theme_minimal() +
@@ -809,13 +790,182 @@ likely_get_values %>%
   geom_errorbar(aes(ymin=lower_ci, ymax=upper_ci), width=.2,
                 position=position_dodge(.9)) +
   labs(x = " ",
-       y = "Percent of Respondents",
+       y = "Percent of Respondents (%)",
        title = "Reasons Vaccinated Respondents Cited For Not Getting a\nCOVID-19 Booster, By Willingness to be Boosted",
        subtitle = "Momentive Survey Data From the First 8 Weeks of 2022 (Jan 1 to Feb 26)",
        fill = "Willingness to be Boosted") +
+  scale_fill_manual(values = c("#333333", "#999999")) +
   theme_minimal() +
   ylim(0,50) + 
   coord_flip() + 
+  theme(plot.title = element_text(face = "bold"))
+
+##---------------PLOTS - NEW VAX TYPE----------------
+# get the overall percents and cis for each response
+vax_type <- analysis_factored_surv %>%
+  group_by(which_vax) %>%
+  dplyr::summarise(inconv = survey_mean(reason_not_get_covid19_booster_mc_inconvenient, vartype = "ci", 
+                                        proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   someth_else = survey_mean(reason_not_get_covid19_booster_mc_something_else, vartype = "ci", 
+                                             proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   too_new = survey_mean(reason_not_get_covid19_booster_mc_too_new, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   side_ef = survey_mean(reason_not_get_covid19_booster_mc_side_effect, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   threat_exag = survey_mean(reason_not_get_covid19_booster_mc_threat_exaggerated, vartype = "ci", 
+                                             proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   dis_gov = survey_mean(reason_not_get_covid19_booster_mc_distrust_government, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   dis_sci = survey_mean(reason_not_get_covid19_booster_mc_distrust_scientist, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   too_pol = survey_mean(reason_not_get_covid19_booster_mc_too_political, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   got_covandvax = survey_mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, vartype = "ci", 
+                                               proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   rxn = survey_mean(reason_not_get_covid19_booster_mc_reaction, vartype = "ci", 
+                                     proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   no_risk = survey_mean(reason_not_get_covid19_booster_mc_not_at_risk, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   others = survey_mean(reason_not_get_covid19_booster_mc_others_before_me, vartype = "ci", 
+                                        proportion = TRUE, prop_method = "beta",  na.rm = TRUE)) %>% 
+  drop_na()
+
+# list of reasons
+columns_list <- c("inconvenient", "something else", "too new", "side effects", "threat exaggerated",
+                  "distrust gov", "distrust science", "too political", "got COVID and vaccine", "reaction",
+                  "not at risk", "others before me")
+
+# make a dataframe of the reasons and their mean value
+vax_type_values <- cbind(vax_type$inconv, vax_type$someth_else, vax_type$too_new, vax_type$side_ef, 
+                           vax_type$threat_exag, vax_type$dis_gov, vax_type$dis_sci, vax_type$too_pol, 
+                           vax_type$got_covandvax, vax_type$rxn, vax_type$no_risk, vax_type$others)
+
+# add row of the nammes to the values df
+colnames(vax_type_values) <- columns_list
+
+# make data vertical and rename columns 
+vax_type_values <- as.data.frame(vax_type_values) %>% 
+  mutate(which_vax = c("Moderna", "Pfizer", "Johnson & Johnson")) %>% 
+  melt(id = 'which_vax') %>% 
+  rename(reason = variable)
+
+# make a list of the upper cis and lower cis 
+lg_upps <- list(vax_type$inconv_upp, vax_type$someth_else_upp, vax_type$too_new_upp, vax_type$side_ef_upp, 
+                vax_type$threat_exag_upp, vax_type$dis_gov_upp, vax_type$dis_sci_upp, vax_type$too_pol_upp, 
+                vax_type$got_covandvax_upp, vax_type$rxn_upp, vax_type$no_risk_upp, vax_type$others_upp)
+
+lg_lows <- list(vax_type$inconv_low, vax_type$someth_else_low, vax_type$too_new_low, vax_type$side_ef_low, 
+                vax_type$threat_exag_low, vax_type$dis_gov_low, vax_type$dis_sci_low, vax_type$too_pol_low, 
+                vax_type$got_covandvax_low, vax_type$rxn_low, vax_type$no_risk_low, vax_type$others_low)
+
+
+# add upper and lower cis as columns in values df
+vax_type_values <- vax_type_values %>% 
+  mutate(upper_ci = unlist(lg_upps)) %>% 
+  mutate(lower_ci = unlist(lg_lows))
+
+# plot - with error bars
+vax_type_values %>% 
+  mutate(value = value*100) %>% 
+  mutate(upper_ci = upper_ci*100) %>% 
+  mutate(lower_ci = lower_ci*100) %>% 
+  ggplot(aes(x = reason, y = value, fill = which_vax)) +
+  geom_col(position = position_dodge2(width = 10, padding = 0.1)) +
+  geom_errorbar(aes(ymin=lower_ci, ymax=upper_ci), width=.2,
+                position=position_dodge(.9)) +
+  labs(x = " ",
+       y = "Percent of Respondents (%)",
+       title = "Reasons Vaccinated Respondents Cited For Not Getting a\nCOVID-19 Booster, By Vaccine Type",
+       subtitle = "Momentive Survey Data From the First 8 Weeks of 2022 (Jan 1 to Feb 26)",
+       fill = "Vax Type") +
+  theme_minimal() +
+  ylim(0,50) + 
+  coord_flip() + 
+  scale_fill_manual(values = c("#999999","#333333", "#666666")) + 
+  theme(plot.title = element_text(face = "bold"))
+
+##---------------PLOTS - NEW POLITICS----------------
+# get the overall percents and cis for each response
+party <- analysis_factored_surv %>%
+  group_by(party) %>%
+  dplyr::summarise(inconv = survey_mean(reason_not_get_covid19_booster_mc_inconvenient, vartype = "ci", 
+                                        proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   someth_else = survey_mean(reason_not_get_covid19_booster_mc_something_else, vartype = "ci", 
+                                             proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   too_new = survey_mean(reason_not_get_covid19_booster_mc_too_new, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   side_ef = survey_mean(reason_not_get_covid19_booster_mc_side_effect, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   threat_exag = survey_mean(reason_not_get_covid19_booster_mc_threat_exaggerated, vartype = "ci", 
+                                             proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   dis_gov = survey_mean(reason_not_get_covid19_booster_mc_distrust_government, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   dis_sci = survey_mean(reason_not_get_covid19_booster_mc_distrust_scientist, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   too_pol = survey_mean(reason_not_get_covid19_booster_mc_too_political, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   got_covandvax = survey_mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, vartype = "ci", 
+                                               proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   rxn = survey_mean(reason_not_get_covid19_booster_mc_reaction, vartype = "ci", 
+                                     proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   no_risk = survey_mean(reason_not_get_covid19_booster_mc_not_at_risk, vartype = "ci", 
+                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
+                   others = survey_mean(reason_not_get_covid19_booster_mc_others_before_me, vartype = "ci", 
+                                        proportion = TRUE, prop_method = "beta",  na.rm = TRUE)) %>% 
+  drop_na()
+
+# list of reasons
+columns_list <- c("inconvenient", "something else", "too new", "side effects", "threat exaggerated",
+                  "distrust gov", "distrust science", "too political", "got COVID and vaccine", "reaction",
+                  "not at risk", "others before me")
+
+# make a dataframe of the reasons and their mean value
+party_values <- cbind(party$inconv, party$someth_else, party$too_new, party$side_ef, 
+                         party$threat_exag, party$dis_gov, party$dis_sci, party$too_pol, 
+                         party$got_covandvax, party$rxn, party$no_risk, party$others)
+
+# add row of the nammes to the values df
+colnames(party_values) <- columns_list
+
+# make data vertical and rename columns 
+party_values <- as.data.frame(party_values) %>% 
+  mutate(party = c("Republican", "Democrat", "Independent")) %>% 
+  melt(id = 'party') %>% 
+  rename(reason = variable)
+
+# make a list of the upper cis and lower cis 
+lg_upps <- list(party$inconv_upp, party$someth_else_upp, party$too_new_upp, party$side_ef_upp, 
+                party$threat_exag_upp, party$dis_gov_upp, party$dis_sci_upp, party$too_pol_upp, 
+                party$got_covandvax_upp, party$rxn_upp, party$no_risk_upp, party$others_upp)
+
+lg_lows <- list(party$inconv_low, party$someth_else_low, party$too_new_low, party$side_ef_low, 
+                party$threat_exag_low, party$dis_gov_low, party$dis_sci_low, party$too_pol_low, 
+                party$got_covandvax_low, party$rxn_low, party$no_risk_low, party$others_low)
+
+
+# add upper and lower cis as columns in values df
+party_values <- party_values %>% 
+  mutate(upper_ci = unlist(lg_upps)) %>% 
+  mutate(lower_ci = unlist(lg_lows))
+
+# plot - with error bars
+party_values %>% 
+  mutate(value = value*100) %>% 
+  mutate(upper_ci = upper_ci*100) %>% 
+  mutate(lower_ci = lower_ci*100) %>% 
+  ggplot(aes(x = reason, y = value, fill = party)) +
+  geom_col(position = position_dodge2(width = 10, padding = 0.1)) +
+  geom_errorbar(aes(ymin=lower_ci, ymax=upper_ci), width=.2,
+                position=position_dodge(.9)) +
+  labs(x = " ",
+       y = "Percent of Respondents (%)",
+       title = "Reasons Vaccinated Respondents Cited For Not Getting a\nCOVID-19 Booster, By Political Party",
+       subtitle = "Momentive Survey Data From the First 8 Weeks of 2022 (Jan 1 to Feb 26)",
+       fill = "Political Party") +
+  theme_minimal() +
+  ylim(0,50) + 
+  coord_flip() + 
+  scale_fill_manual(values = c("#3232ff", "#198C19", "#E52C2C")) + 
   theme(plot.title = element_text(face = "bold"))
 
 
