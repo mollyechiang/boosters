@@ -266,12 +266,13 @@ twenty22_total <- surveym102 %>%
   filter(response_date >= as.Date("2022-01-01")) %>%
   filter(response_date <= as.Date("2022-02-26"))
 
+# drop no weights and drop under 18 -- all adult responses in first 8 weeks 
 twenty22 <- twenty22_total %>% 
   # drop those with no weights 
   drop_na(weight_daily_national_13plus) %>%
   # add dividions by week 
   mutate(week = cut.Date(response_date, breaks = "1 week", labels = FALSE)) %>% 
-  # code into vaccinated and unvaccinated - drop those unsure of vaccination 
+  # code into vaccinated and unvaccinated 
   mutate(get_vaccine_yesno = replace(get_vaccine_yesno, get_vaccine_yesno == 1, "Vaccinated")) %>%
   mutate(get_vaccine_yesno = replace(get_vaccine_yesno, get_vaccine_yesno == 2, "Unvaccinated")) %>% 
   select(-start_date) %>% 
@@ -286,199 +287,72 @@ analysis <- twenty22 %>%
   # filter for only those not willing or unsure of booster (only ones who were asked the questions)
   filter(covid19_booster_likely_to_get %in% c(2,3)) %>% 
   # filter for vaccinated 
-  filter(get_vaccine_yesno == "Vaccinated")
+  filter(get_vaccine_yesno == "Vaccinated") %>% 
+  # filter for only fully vaccinated (not 1 dose ppl)
+  filter(received_all_covid19_required_doses == 1)
 
 # of people who are not willing or unsure of booster:
 num_notwilling <- analysis %>% filter(covid19_booster_likely_to_get == 2) %>% nrow()
-  # 5272 are not willing 
+  # 3771 are not willing 
 num_unsure <- analysis %>% filter(covid19_booster_likely_to_get == 3) %>% nrow()
-  # 8676 are unsure - big category!
+  # 6318 are unsure - big category!
 
-excluded <- nrow(twenty22_total) - nrow(analysis)
+excluded <- nrow(twenty22) - nrow(analysis)
 
-##-----------------WEIGHTED PERCENTS - OLD---------------
-
-# overall in 2022
-percent_likely <- analysis %>%
-  # get the percentage of vaccinated, but unboosted respondents in 2022 that cited each of the 
-  # following reasons for not getting boosted 
-  mutate(incv_percent = weighted.mean(reason_not_get_covid19_booster_mc_inconvenient, weight_daily_national_13plus)) %>%
-  mutate(smthe_percent = weighted.mean(reason_not_get_covid19_booster_mc_something_else, weight_daily_national_13plus)) %>%
-  mutate(new_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_new, weight_daily_national_13plus)) %>%
-  mutate(sidee_percent = weighted.mean(reason_not_get_covid19_booster_mc_side_effect, weight_daily_national_13plus)) %>% 
-  mutate(texg_percent = weighted.mean(reason_not_get_covid19_booster_mc_threat_exaggerated, weight_daily_national_13plus)) %>% 
-  mutate(disgov_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_government, weight_daily_national_13plus)) %>% 
-  mutate(dissci_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_scientist, weight_daily_national_13plus)) %>% 
-  mutate(toop_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_political, weight_daily_national_13plus)) %>% 
-  mutate(gotcovvax_percent = weighted.mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, weight_daily_national_13plus)) %>%
-  mutate(rxn_percent = weighted.mean(reason_not_get_covid19_booster_mc_reaction, weight_daily_national_13plus)) %>% 
-  mutate(norisk_percent = weighted.mean(reason_not_get_covid19_booster_mc_not_at_risk, weight_daily_national_13plus)) %>% 
-  mutate(oths_percent = weighted.mean(reason_not_get_covid19_booster_mc_others_before_me, weight_daily_national_13plus)) %>% 
-  #mutate(other_percent = weighted.mean(reason_not_get_covid19_booster_mc_other_text, weight_daily_national_13plus))
-  select(incv_percent, smthe_percent, new_percent, sidee_percent, texg_percent, disgov_percent, dissci_percent, toop_percent,
-         gotcovvax_percent, rxn_percent, norisk_percent, oths_percent) %>% 
-  distinct()
-
-# by day
-percent_likely_day <- analysis %>%
-  group_by(response_date) %>%
-  mutate(incv_percent = weighted.mean(reason_not_get_covid19_booster_mc_inconvenient, weight_daily_national_13plus)) %>%
-  mutate(smthe_percent = weighted.mean(reason_not_get_covid19_booster_mc_something_else, weight_daily_national_13plus)) %>%
-  mutate(new_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_new, weight_daily_national_13plus)) %>%
-  mutate(sidee_percent = weighted.mean(reason_not_get_covid19_booster_mc_side_effect, weight_daily_national_13plus)) %>% 
-  mutate(texg_percent = weighted.mean(reason_not_get_covid19_booster_mc_threat_exaggerated, weight_daily_national_13plus)) %>% 
-  mutate(disgov_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_government, weight_daily_national_13plus)) %>% 
-  mutate(dissci_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_scientist, weight_daily_national_13plus)) %>% 
-  mutate(toop_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_political, weight_daily_national_13plus)) %>% 
-  mutate(gotcovvax_percent = weighted.mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, weight_daily_national_13plus)) %>%
-  mutate(rxn_percent = weighted.mean(reason_not_get_covid19_booster_mc_reaction, weight_daily_national_13plus)) %>% 
-  mutate(norisk_percent = weighted.mean(reason_not_get_covid19_booster_mc_not_at_risk, weight_daily_national_13plus)) %>% 
-  mutate(oths_percent = weighted.mean(reason_not_get_covid19_booster_mc_others_before_me, weight_daily_national_13plus))
-
-# by week
-# MEC - change to week weights 
-percent_likely_week <- analysis %>%
-  group_by(week) %>%
-  mutate(incv_percent = weighted.mean(reason_not_get_covid19_booster_mc_inconvenient, weight_daily_national_13plus)) %>%
-  mutate(smthe_percent = weighted.mean(reason_not_get_covid19_booster_mc_something_else, weight_daily_national_13plus)) %>%
-  mutate(new_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_new, weight_daily_national_13plus)) %>%
-  mutate(sidee_percent = weighted.mean(reason_not_get_covid19_booster_mc_side_effect, weight_daily_national_13plus)) %>% 
-  mutate(texg_percent = weighted.mean(reason_not_get_covid19_booster_mc_threat_exaggerated, weight_daily_national_13plus)) %>% 
-  mutate(disgov_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_government, weight_daily_national_13plus)) %>% 
-  mutate(dissci_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_scientist, weight_daily_national_13plus)) %>% 
-  mutate(toop_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_political, weight_daily_national_13plus)) %>% 
-  mutate(gotcovvax_percent = weighted.mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, weight_daily_national_13plus)) %>%
-  mutate(rxn_percent = weighted.mean(reason_not_get_covid19_booster_mc_reaction, weight_daily_national_13plus)) %>% 
-  mutate(norisk_percent = weighted.mean(reason_not_get_covid19_booster_mc_not_at_risk, weight_daily_national_13plus)) %>% 
-  mutate(oths_percent = weighted.mean(reason_not_get_covid19_booster_mc_others_before_me, weight_daily_national_13plus))
-
-# by week and state
-percent_likely_week_state <- analysis %>%
-  group_by(week, state) %>%
-  mutate(incv_percent = weighted.mean(reason_not_get_covid19_booster_mc_inconvenient, weight_daily_national_13plus)) %>%
-  mutate(smthe_percent = weighted.mean(reason_not_get_covid19_booster_mc_something_else, weight_daily_national_13plus)) %>%
-  mutate(new_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_new, weight_daily_national_13plus)) %>%
-  mutate(sidee_percent = weighted.mean(reason_not_get_covid19_booster_mc_side_effect, weight_daily_national_13plus)) %>% 
-  mutate(texg_percent = weighted.mean(reason_not_get_covid19_booster_mc_threat_exaggerated, weight_daily_national_13plus)) %>% 
-  mutate(disgov_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_government, weight_daily_national_13plus)) %>% 
-  mutate(dissci_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_scientist, weight_daily_national_13plus)) %>% 
-  mutate(toop_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_political, weight_daily_national_13plus)) %>% 
-  mutate(gotcovvax_percent = weighted.mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, weight_daily_national_13plus)) %>%
-  mutate(rxn_percent = weighted.mean(reason_not_get_covid19_booster_mc_reaction, weight_daily_national_13plus)) %>% 
-  mutate(norisk_percent = weighted.mean(reason_not_get_covid19_booster_mc_not_at_risk, weight_daily_national_13plus)) %>% 
-  mutate(oths_percent = weighted.mean(reason_not_get_covid19_booster_mc_others_before_me, weight_daily_national_13plus))
-
-# by party 
-percent_likely_party <- analysis %>%
-  group_by(party_id) %>%
-  mutate(incv_percent = weighted.mean(reason_not_get_covid19_booster_mc_inconvenient, weight_daily_national_13plus)) %>%
-  mutate(smthe_percent = weighted.mean(reason_not_get_covid19_booster_mc_something_else, weight_daily_national_13plus)) %>%
-  mutate(new_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_new, weight_daily_national_13plus)) %>%
-  mutate(sidee_percent = weighted.mean(reason_not_get_covid19_booster_mc_side_effect, weight_daily_national_13plus)) %>% 
-  mutate(texg_percent = weighted.mean(reason_not_get_covid19_booster_mc_threat_exaggerated, weight_daily_national_13plus)) %>% 
-  mutate(disgov_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_government, weight_daily_national_13plus)) %>% 
-  mutate(dissci_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_scientist, weight_daily_national_13plus)) %>% 
-  mutate(toop_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_political, weight_daily_national_13plus)) %>% 
-  mutate(gotcovvax_percent = weighted.mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, weight_daily_national_13plus)) %>%
-  mutate(rxn_percent = weighted.mean(reason_not_get_covid19_booster_mc_reaction, weight_daily_national_13plus)) %>% 
-  mutate(norisk_percent = weighted.mean(reason_not_get_covid19_booster_mc_not_at_risk, weight_daily_national_13plus)) %>% 
-  mutate(oths_percent = weighted.mean(reason_not_get_covid19_booster_mc_others_before_me, weight_daily_national_13plus))
-
-# by age
-percent_likely_age <- analysis %>%
-  group_by(age7) %>%
-  mutate(incv_percent = weighted.mean(reason_not_get_covid19_booster_mc_inconvenient, weight_daily_national_13plus)) %>%
-  mutate(smthe_percent = weighted.mean(reason_not_get_covid19_booster_mc_something_else, weight_daily_national_13plus)) %>%
-  mutate(new_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_new, weight_daily_national_13plus)) %>%
-  mutate(sidee_percent = weighted.mean(reason_not_get_covid19_booster_mc_side_effect, weight_daily_national_13plus)) %>% 
-  mutate(texg_percent = weighted.mean(reason_not_get_covid19_booster_mc_threat_exaggerated, weight_daily_national_13plus)) %>% 
-  mutate(disgov_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_government, weight_daily_national_13plus)) %>% 
-  mutate(dissci_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_scientist, weight_daily_national_13plus)) %>% 
-  mutate(toop_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_political, weight_daily_national_13plus)) %>% 
-  mutate(gotcovvax_percent = weighted.mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, weight_daily_national_13plus)) %>%
-  mutate(rxn_percent = weighted.mean(reason_not_get_covid19_booster_mc_reaction, weight_daily_national_13plus)) %>% 
-  mutate(norisk_percent = weighted.mean(reason_not_get_covid19_booster_mc_not_at_risk, weight_daily_national_13plus)) %>% 
-  mutate(oths_percent = weighted.mean(reason_not_get_covid19_booster_mc_others_before_me, weight_daily_national_13plus))
-
-# by willingness to be boosted
-percent_likely_will <- analysis %>%
-  group_by(covid19_booster_likely_to_get) %>%
-  mutate(incv_percent = weighted.mean(reason_not_get_covid19_booster_mc_inconvenient, weight_daily_national_13plus)) %>%
-  mutate(smthe_percent = weighted.mean(reason_not_get_covid19_booster_mc_something_else, weight_daily_national_13plus)) %>%
-  mutate(new_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_new, weight_daily_national_13plus)) %>%
-  mutate(sidee_percent = weighted.mean(reason_not_get_covid19_booster_mc_side_effect, weight_daily_national_13plus)) %>% 
-  mutate(texg_percent = weighted.mean(reason_not_get_covid19_booster_mc_threat_exaggerated, weight_daily_national_13plus)) %>% 
-  mutate(disgov_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_government, weight_daily_national_13plus)) %>% 
-  mutate(dissci_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_scientist, weight_daily_national_13plus)) %>% 
-  mutate(toop_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_political, weight_daily_national_13plus)) %>% 
-  mutate(gotcovvax_percent = weighted.mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, weight_daily_national_13plus)) %>%
-  mutate(rxn_percent = weighted.mean(reason_not_get_covid19_booster_mc_reaction, weight_daily_national_13plus)) %>% 
-  mutate(norisk_percent = weighted.mean(reason_not_get_covid19_booster_mc_not_at_risk, weight_daily_national_13plus)) %>% 
-  mutate(oths_percent = weighted.mean(reason_not_get_covid19_booster_mc_others_before_me, weight_daily_national_13plus))
-
-# by  type of first shot 
-percent_likely_vaxtype <- analysis %>%
-  group_by(which_covid19_vaccine) %>%
-  mutate(incv_percent = weighted.mean(reason_not_get_covid19_booster_mc_inconvenient, weight_daily_national_13plus)) %>%
-  mutate(smthe_percent = weighted.mean(reason_not_get_covid19_booster_mc_something_else, weight_daily_national_13plus)) %>%
-  mutate(new_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_new, weight_daily_national_13plus)) %>%
-  mutate(sidee_percent = weighted.mean(reason_not_get_covid19_booster_mc_side_effect, weight_daily_national_13plus)) %>% 
-  mutate(texg_percent = weighted.mean(reason_not_get_covid19_booster_mc_threat_exaggerated, weight_daily_national_13plus)) %>% 
-  mutate(disgov_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_government, weight_daily_national_13plus)) %>% 
-  mutate(dissci_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_scientist, weight_daily_national_13plus)) %>% 
-  mutate(toop_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_political, weight_daily_national_13plus)) %>% 
-  mutate(gotcovvax_percent = weighted.mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, weight_daily_national_13plus)) %>%
-  mutate(rxn_percent = weighted.mean(reason_not_get_covid19_booster_mc_reaction, weight_daily_national_13plus)) %>% 
-  mutate(norisk_percent = weighted.mean(reason_not_get_covid19_booster_mc_not_at_risk, weight_daily_national_13plus)) %>% 
-  mutate(oths_percent = weighted.mean(reason_not_get_covid19_booster_mc_others_before_me, weight_daily_national_13plus))
 
 ##-----------------FACTORING---------------
 
-analysis_factored <- analysis
+# factor twenty22 -- and then filter later  
+analysis_factored <- twenty22
 
-analysis_factored$party<- factor(analysis$party_id, levels = c(1,2,3), labels = c("Republican", "Democrat", "Independent"))
+analysis_factored$party<- factor(twenty22$party_id, levels = c(1,2,3,4), labels = c("Republican", "Democrat", 
+                                                                                    "Independent", "Did Not Respond - Party"))
 
-analysis_factored$which_vax<- factor(analysis$which_covid19_vaccine, levels = c(1,2,3), labels = c("Moderna", "Pfizer", "Johnson & Johnson"))
+analysis_factored$which_vax<- factor(twenty22$which_covid19_vaccine, levels = c(1,2,3), labels = c("Moderna", "Pfizer", "Johnson & Johnson"))
 
 
-analysis_factored$edu<- factor(analysis$educ4, levels = c(1,2,3,4,5), labels = c("High School or Less",
+analysis_factored$edu<- factor(twenty22$educ4, levels = c(1,2,3,4,5), labels = c("High School or Less",
                                                               "Some College",
                                                               "College or More", 
-                                                              "Post Graduate Degree","Did Not Respond"))
+                                                              "Post Graduate Degree","Did Not Respond - Education"))
 
-analysis_factored$race_recode <- ifelse(analysis$race_recode==6,2,analysis$race_recode)
+analysis_factored$race_recode <- ifelse(twenty22$race_recode==6,2,twenty22$race_recode)
 
 analysis_factored$race_recode<- factor(analysis_factored$race_recode, levels = c(1,2,3,4,5,7,8,9,10), labels = c("White, not Hispanic","Single Other Race","Hispanic or Latino/a",
                                                                               "Black of African American", "Asian",
                                                                               "Native Hawaiian or Other Pacific Islander", "American Indian or Alaska Native", 
-                                                                              "Did Not Respond", "Multi-Racial"))
+                                                                              "Did Not Respond - Race", "Multi-Racial"))
 
-analysis_factored$is_essential_worker <- ifelse(is.na(analysis$is_essential_worker),3,analysis$is_essential_worker)
+analysis_factored$is_essential_worker <- ifelse(is.na(twenty22$is_essential_worker),3,twenty22$is_essential_worker)
 
 analysis_factored$essential_worker<- factor(analysis_factored$is_essential_worker, levels = c(1,2,3), labels = c("Yes",
                                                                                      "No",
                                                                                      "Did Not Respond"))
 
 
-analysis_factored$household_income<- factor(analysis$income, levels = c(1,2,3,4,5,6,7,8), labels = c("Under $15,000",
+analysis_factored$household_income<- factor(twenty22$income, levels = c(1,2,3,4,5,6,7,8), labels = c("Under $15,000",
                                                                                   "Between $15,000 and $29,999",
                                                                                   "Between $30,000 and $49,999",
                                                                                   "Between $50,000 and $74,999",
                                                                                   "Between $75,000 and $99,999",
                                                                                   "Between $100,000 and $150,000",
-                                                                                  "Over $150,000","Did Not Respond"))
+                                                                                  "Over $150,000","Did Not Respond - Income"))
 
 
 # only looking at vaccinated people 
-analysis_factored$vaccination_status <- ifelse(analysis$get_vaccine_yesno == "Unvaccinated", "Unvaccinated",
-                                        ifelse(analysis$get_vaccine_yesno == 3, "Did Not Respond",
-                                        ifelse(analysis$received_all_covid19_required_doses == 2, "Partially Vaccinated",
-                                               ifelse(analysis$received_all_covid19_required_doses == 1, "Fully Vaccinated", "Did Not Respond"))))
+analysis_factored$vaccination_status <- ifelse(twenty22$get_vaccine_yesno == "Unvaccinated", "Unvaccinated",
+                                               ifelse(twenty22$get_vaccine_yesno == 3, "Did Not Respond - Vax Status",
+                                                      ifelse(twenty22$received_all_covid19_required_doses == 2, "Partially Vaccinated",
+                                                             ifelse(twenty22$received_all_covid19_required_doses == 1 & twenty22$covid19_booster_likely_to_get == 4, "Fully Vaccinated and Boosted",
+                                                                    ifelse(twenty22$received_all_covid19_required_doses == 1,"Fully Vaccinated",
+                                                                           ifelse(twenty22$received_all_covid19_required_doses == 3,"Fully Vaccinated","Did Not Respond"))))))
+
+analysis_factored$vaccination_status <- ifelse(is.na(analysis_factored$vaccination_status), "Did Not Respond - Vax Status", analysis_factored$vaccination_status)
 
 analysis_factored$vaccination_status <- factor(analysis_factored$vaccination_status, levels=c("Unvaccinated",
                                                                   "Partially Vaccinated",
                                                                   "Fully Vaccinated",
-                                                                  "Fully Vaccinated and Boosted","Did Not Respond"))
+                                                                  "Fully Vaccinated and Boosted","Did Not Respond - Vax Status"))
 
 analysis_factored$age_group <- cut(analysis_factored$age, breaks = c(17.99,29,39,49,64,74,Inf))
 
@@ -495,6 +369,7 @@ analysis_factored$gender <- factor(analysis_factored$gender, levels = c(1,2,3,4)
 analysis_factored$gender <- factor(analysis_factored$gender, levels = c("Female","Male","Transgender or Nonbinary","No answer"))
 
 analysis_factored <- analysis_factored  %>% select(response_id, response_date, week, covid19_booster_likely_to_get, 
+                            received_all_covid19_required_doses,
                             reason_not_get_covid19_booster_mc_inconvenient,
                             reason_not_get_covid19_booster_mc_something_else,
                             reason_not_get_covid19_booster_mc_too_new,
@@ -514,9 +389,20 @@ analysis_factored <- analysis_factored  %>% select(response_id, response_date, w
 
 ##-----------------SURVEY ANALYSIS---------------
 
-# make a survey design object
-analysis_factored_surv <- analysis_factored %>% as_survey_design(ids = 1, weights = weight_daily_national_18plus)
+# make a survey design object - for all data
+analysis_factored_surv_all <- analysis_factored %>% as_survey_design(ids = 1, weights = weight_daily_national_18plus)
 
+analysis_factored_surv <- analysis_factored %>% 
+  # filter for only those not willing or unsure of booster (only ones who were asked the questions)
+  filter(covid19_booster_likely_to_get %in% c(2,3)) %>% 
+  # filter for vaccinated 
+  filter(get_vaccine_yesno == "Vaccinated") %>% 
+  # filter for only fully vaccinated (not 1 dose ppl)
+  filter(received_all_covid19_required_doses == 1) %>% 
+  filter(vaccination_status != "Did Not Respond") %>% 
+  # make into survey design
+  as_survey_design(ids = 1, weights = weight_daily_national_18plus)
+  
 ##-----------------LONGITUDINAL ANALYSIS---------------
 
 # calculate average percents and upper and lower CIs for different reasons
@@ -968,6 +854,115 @@ party_values %>%
   scale_fill_manual(values = c("#3232ff", "#198C19", "#E52C2C")) + 
   theme(plot.title = element_text(face = "bold"))
 
+##---------------TABLE ONE----------------
+surv_race_all<-analysis_factored_surv_all %>%
+  group_by(race_recode) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  dplyr::select(Characteristic=race_recode,Weighted) %>% 
+  add_row(Characteristic ="Race", .before=1)
+
+surv_race<-analysis_factored_surv %>%
+  group_by(race_recode) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  dplyr::select(Characteristic=race_recode,Weighted) %>% 
+  add_row(Characteristic ="Race", .before=1)
+
+surv_gender_all<-analysis_factored_surv_all %>%
+  group_by(gender) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=gender,Weighted) %>% 
+  add_row(Characteristic ="Gender", .before=1)
+
+surv_gender<-analysis_factored_surv %>%
+  group_by(gender) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=gender,Weighted) %>% 
+  add_row(Characteristic ="Gender", .before=1)
+
+surv_edu_all<-analysis_factored_surv_all %>%
+  group_by(edu) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=edu,Weighted) %>% 
+  add_row(Characteristic ="Education", .before=1)
+
+surv_edu<-analysis_factored_surv %>%
+  group_by(edu) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=edu,Weighted) %>% 
+  add_row(Characteristic ="Education", .before=1)
+
+
+surv_age_group_all<-analysis_factored_surv_all %>%
+  group_by(age_group) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=age_group,Weighted) %>% 
+  add_row(Characteristic ="Age", .before=1)
+
+surv_age_group<-analysis_factored_surv %>%
+  group_by(age_group) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=age_group,Weighted) %>% 
+  add_row(Characteristic ="Age", .before=1)
+
+surv_household_income_all<-analysis_factored_surv_all %>%
+  group_by(household_income) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=household_income,Weighted) %>% 
+  add_row(Characteristic ="Household Income", .before=1)
+
+surv_household_income<-analysis_factored_surv %>%
+  group_by(household_income) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=household_income,Weighted) %>% 
+  add_row(Characteristic ="Household Income", .before=1)
+
+surv_vaccination_status_all<-analysis_factored_surv_all %>%
+  group_by(vaccination_status) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=vaccination_status,Weighted) %>% 
+  add_row(Characteristic ="COVID-19 Vaccine", .before=1)
+
+surv_vaccination_status<-analysis_factored_surv %>%
+  group_by(vaccination_status) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=vaccination_status,Weighted) %>% 
+  add_row(Characteristic ="COVID-19 Vaccine", .before=1)
+
+surv_party_all<-analysis_factored_surv_all %>%
+  group_by(party) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=party,Weighted) %>% 
+  add_row(Characteristic ="Political Party", .before=1)
+
+surv_party<-analysis_factored_surv %>%
+  group_by(party) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=party,Weighted) %>% 
+  add_row(Characteristic ="Political Party", .before=1)
+
+
+table_one_col1 <- rbind(surv_race,surv_gender,surv_edu,surv_age_group,surv_household_income,
+                   surv_vaccination_status,surv_party)
+table_one_col2 <- rbind(surv_race_all,surv_gender_all,surv_edu_all,surv_age_group_all,
+                        surv_household_income_all,surv_vaccination_status_all,surv_party_all)
+names(table_one_col1) <- c("Characteristic","Vaccinated But Not Boosted Survey Respondents, N (%)")
+names(table_one_col2) <- c("Characteristic", "All Survey Respondents, N (%)")
+
+table_one <- table_one_col2 %>% left_join(table_one_col1, by = "Characteristic")
 
 ##---------------PLOTS - OLD----------------
 # overall - 2022
@@ -1150,6 +1145,142 @@ percent_likely_age %>%
   theme_minimal() +
   theme(plot.title = element_text(face = "bold")) +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+
+##-----------------WEIGHTED PERCENTS - OLD---------------
+
+# overall in 2022
+percent_likely <- analysis %>%
+  # get the percentage of vaccinated, but unboosted respondents in 2022 that cited each of the 
+  # following reasons for not getting boosted 
+  mutate(incv_percent = weighted.mean(reason_not_get_covid19_booster_mc_inconvenient, weight_daily_national_13plus)) %>%
+  mutate(smthe_percent = weighted.mean(reason_not_get_covid19_booster_mc_something_else, weight_daily_national_13plus)) %>%
+  mutate(new_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_new, weight_daily_national_13plus)) %>%
+  mutate(sidee_percent = weighted.mean(reason_not_get_covid19_booster_mc_side_effect, weight_daily_national_13plus)) %>% 
+  mutate(texg_percent = weighted.mean(reason_not_get_covid19_booster_mc_threat_exaggerated, weight_daily_national_13plus)) %>% 
+  mutate(disgov_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_government, weight_daily_national_13plus)) %>% 
+  mutate(dissci_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_scientist, weight_daily_national_13plus)) %>% 
+  mutate(toop_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_political, weight_daily_national_13plus)) %>% 
+  mutate(gotcovvax_percent = weighted.mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, weight_daily_national_13plus)) %>%
+  mutate(rxn_percent = weighted.mean(reason_not_get_covid19_booster_mc_reaction, weight_daily_national_13plus)) %>% 
+  mutate(norisk_percent = weighted.mean(reason_not_get_covid19_booster_mc_not_at_risk, weight_daily_national_13plus)) %>% 
+  mutate(oths_percent = weighted.mean(reason_not_get_covid19_booster_mc_others_before_me, weight_daily_national_13plus)) %>% 
+  #mutate(other_percent = weighted.mean(reason_not_get_covid19_booster_mc_other_text, weight_daily_national_13plus))
+  select(incv_percent, smthe_percent, new_percent, sidee_percent, texg_percent, disgov_percent, dissci_percent, toop_percent,
+         gotcovvax_percent, rxn_percent, norisk_percent, oths_percent) %>% 
+  distinct()
+
+# by day
+percent_likely_day <- analysis %>%
+  group_by(response_date) %>%
+  mutate(incv_percent = weighted.mean(reason_not_get_covid19_booster_mc_inconvenient, weight_daily_national_13plus)) %>%
+  mutate(smthe_percent = weighted.mean(reason_not_get_covid19_booster_mc_something_else, weight_daily_national_13plus)) %>%
+  mutate(new_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_new, weight_daily_national_13plus)) %>%
+  mutate(sidee_percent = weighted.mean(reason_not_get_covid19_booster_mc_side_effect, weight_daily_national_13plus)) %>% 
+  mutate(texg_percent = weighted.mean(reason_not_get_covid19_booster_mc_threat_exaggerated, weight_daily_national_13plus)) %>% 
+  mutate(disgov_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_government, weight_daily_national_13plus)) %>% 
+  mutate(dissci_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_scientist, weight_daily_national_13plus)) %>% 
+  mutate(toop_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_political, weight_daily_national_13plus)) %>% 
+  mutate(gotcovvax_percent = weighted.mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, weight_daily_national_13plus)) %>%
+  mutate(rxn_percent = weighted.mean(reason_not_get_covid19_booster_mc_reaction, weight_daily_national_13plus)) %>% 
+  mutate(norisk_percent = weighted.mean(reason_not_get_covid19_booster_mc_not_at_risk, weight_daily_national_13plus)) %>% 
+  mutate(oths_percent = weighted.mean(reason_not_get_covid19_booster_mc_others_before_me, weight_daily_national_13plus))
+
+# by week
+# MEC - change to week weights 
+percent_likely_week <- analysis %>%
+  group_by(week) %>%
+  mutate(incv_percent = weighted.mean(reason_not_get_covid19_booster_mc_inconvenient, weight_daily_national_13plus)) %>%
+  mutate(smthe_percent = weighted.mean(reason_not_get_covid19_booster_mc_something_else, weight_daily_national_13plus)) %>%
+  mutate(new_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_new, weight_daily_national_13plus)) %>%
+  mutate(sidee_percent = weighted.mean(reason_not_get_covid19_booster_mc_side_effect, weight_daily_national_13plus)) %>% 
+  mutate(texg_percent = weighted.mean(reason_not_get_covid19_booster_mc_threat_exaggerated, weight_daily_national_13plus)) %>% 
+  mutate(disgov_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_government, weight_daily_national_13plus)) %>% 
+  mutate(dissci_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_scientist, weight_daily_national_13plus)) %>% 
+  mutate(toop_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_political, weight_daily_national_13plus)) %>% 
+  mutate(gotcovvax_percent = weighted.mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, weight_daily_national_13plus)) %>%
+  mutate(rxn_percent = weighted.mean(reason_not_get_covid19_booster_mc_reaction, weight_daily_national_13plus)) %>% 
+  mutate(norisk_percent = weighted.mean(reason_not_get_covid19_booster_mc_not_at_risk, weight_daily_national_13plus)) %>% 
+  mutate(oths_percent = weighted.mean(reason_not_get_covid19_booster_mc_others_before_me, weight_daily_national_13plus))
+
+# by week and state
+percent_likely_week_state <- analysis %>%
+  group_by(week, state) %>%
+  mutate(incv_percent = weighted.mean(reason_not_get_covid19_booster_mc_inconvenient, weight_daily_national_13plus)) %>%
+  mutate(smthe_percent = weighted.mean(reason_not_get_covid19_booster_mc_something_else, weight_daily_national_13plus)) %>%
+  mutate(new_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_new, weight_daily_national_13plus)) %>%
+  mutate(sidee_percent = weighted.mean(reason_not_get_covid19_booster_mc_side_effect, weight_daily_national_13plus)) %>% 
+  mutate(texg_percent = weighted.mean(reason_not_get_covid19_booster_mc_threat_exaggerated, weight_daily_national_13plus)) %>% 
+  mutate(disgov_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_government, weight_daily_national_13plus)) %>% 
+  mutate(dissci_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_scientist, weight_daily_national_13plus)) %>% 
+  mutate(toop_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_political, weight_daily_national_13plus)) %>% 
+  mutate(gotcovvax_percent = weighted.mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, weight_daily_national_13plus)) %>%
+  mutate(rxn_percent = weighted.mean(reason_not_get_covid19_booster_mc_reaction, weight_daily_national_13plus)) %>% 
+  mutate(norisk_percent = weighted.mean(reason_not_get_covid19_booster_mc_not_at_risk, weight_daily_national_13plus)) %>% 
+  mutate(oths_percent = weighted.mean(reason_not_get_covid19_booster_mc_others_before_me, weight_daily_national_13plus))
+
+# by party 
+percent_likely_party <- analysis %>%
+  group_by(party_id) %>%
+  mutate(incv_percent = weighted.mean(reason_not_get_covid19_booster_mc_inconvenient, weight_daily_national_13plus)) %>%
+  mutate(smthe_percent = weighted.mean(reason_not_get_covid19_booster_mc_something_else, weight_daily_national_13plus)) %>%
+  mutate(new_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_new, weight_daily_national_13plus)) %>%
+  mutate(sidee_percent = weighted.mean(reason_not_get_covid19_booster_mc_side_effect, weight_daily_national_13plus)) %>% 
+  mutate(texg_percent = weighted.mean(reason_not_get_covid19_booster_mc_threat_exaggerated, weight_daily_national_13plus)) %>% 
+  mutate(disgov_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_government, weight_daily_national_13plus)) %>% 
+  mutate(dissci_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_scientist, weight_daily_national_13plus)) %>% 
+  mutate(toop_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_political, weight_daily_national_13plus)) %>% 
+  mutate(gotcovvax_percent = weighted.mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, weight_daily_national_13plus)) %>%
+  mutate(rxn_percent = weighted.mean(reason_not_get_covid19_booster_mc_reaction, weight_daily_national_13plus)) %>% 
+  mutate(norisk_percent = weighted.mean(reason_not_get_covid19_booster_mc_not_at_risk, weight_daily_national_13plus)) %>% 
+  mutate(oths_percent = weighted.mean(reason_not_get_covid19_booster_mc_others_before_me, weight_daily_national_13plus))
+
+# by age
+percent_likely_age <- analysis %>%
+  group_by(age7) %>%
+  mutate(incv_percent = weighted.mean(reason_not_get_covid19_booster_mc_inconvenient, weight_daily_national_13plus)) %>%
+  mutate(smthe_percent = weighted.mean(reason_not_get_covid19_booster_mc_something_else, weight_daily_national_13plus)) %>%
+  mutate(new_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_new, weight_daily_national_13plus)) %>%
+  mutate(sidee_percent = weighted.mean(reason_not_get_covid19_booster_mc_side_effect, weight_daily_national_13plus)) %>% 
+  mutate(texg_percent = weighted.mean(reason_not_get_covid19_booster_mc_threat_exaggerated, weight_daily_national_13plus)) %>% 
+  mutate(disgov_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_government, weight_daily_national_13plus)) %>% 
+  mutate(dissci_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_scientist, weight_daily_national_13plus)) %>% 
+  mutate(toop_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_political, weight_daily_national_13plus)) %>% 
+  mutate(gotcovvax_percent = weighted.mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, weight_daily_national_13plus)) %>%
+  mutate(rxn_percent = weighted.mean(reason_not_get_covid19_booster_mc_reaction, weight_daily_national_13plus)) %>% 
+  mutate(norisk_percent = weighted.mean(reason_not_get_covid19_booster_mc_not_at_risk, weight_daily_national_13plus)) %>% 
+  mutate(oths_percent = weighted.mean(reason_not_get_covid19_booster_mc_others_before_me, weight_daily_national_13plus))
+
+# by willingness to be boosted
+percent_likely_will <- analysis %>%
+  group_by(covid19_booster_likely_to_get) %>%
+  mutate(incv_percent = weighted.mean(reason_not_get_covid19_booster_mc_inconvenient, weight_daily_national_13plus)) %>%
+  mutate(smthe_percent = weighted.mean(reason_not_get_covid19_booster_mc_something_else, weight_daily_national_13plus)) %>%
+  mutate(new_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_new, weight_daily_national_13plus)) %>%
+  mutate(sidee_percent = weighted.mean(reason_not_get_covid19_booster_mc_side_effect, weight_daily_national_13plus)) %>% 
+  mutate(texg_percent = weighted.mean(reason_not_get_covid19_booster_mc_threat_exaggerated, weight_daily_national_13plus)) %>% 
+  mutate(disgov_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_government, weight_daily_national_13plus)) %>% 
+  mutate(dissci_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_scientist, weight_daily_national_13plus)) %>% 
+  mutate(toop_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_political, weight_daily_national_13plus)) %>% 
+  mutate(gotcovvax_percent = weighted.mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, weight_daily_national_13plus)) %>%
+  mutate(rxn_percent = weighted.mean(reason_not_get_covid19_booster_mc_reaction, weight_daily_national_13plus)) %>% 
+  mutate(norisk_percent = weighted.mean(reason_not_get_covid19_booster_mc_not_at_risk, weight_daily_national_13plus)) %>% 
+  mutate(oths_percent = weighted.mean(reason_not_get_covid19_booster_mc_others_before_me, weight_daily_national_13plus))
+
+# by  type of first shot 
+percent_likely_vaxtype <- analysis %>%
+  group_by(which_covid19_vaccine) %>%
+  mutate(incv_percent = weighted.mean(reason_not_get_covid19_booster_mc_inconvenient, weight_daily_national_13plus)) %>%
+  mutate(smthe_percent = weighted.mean(reason_not_get_covid19_booster_mc_something_else, weight_daily_national_13plus)) %>%
+  mutate(new_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_new, weight_daily_national_13plus)) %>%
+  mutate(sidee_percent = weighted.mean(reason_not_get_covid19_booster_mc_side_effect, weight_daily_national_13plus)) %>% 
+  mutate(texg_percent = weighted.mean(reason_not_get_covid19_booster_mc_threat_exaggerated, weight_daily_national_13plus)) %>% 
+  mutate(disgov_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_government, weight_daily_national_13plus)) %>% 
+  mutate(dissci_percent = weighted.mean(reason_not_get_covid19_booster_mc_distrust_scientist, weight_daily_national_13plus)) %>% 
+  mutate(toop_percent = weighted.mean(reason_not_get_covid19_booster_mc_too_political, weight_daily_national_13plus)) %>% 
+  mutate(gotcovvax_percent = weighted.mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated, weight_daily_national_13plus)) %>%
+  mutate(rxn_percent = weighted.mean(reason_not_get_covid19_booster_mc_reaction, weight_daily_national_13plus)) %>% 
+  mutate(norisk_percent = weighted.mean(reason_not_get_covid19_booster_mc_not_at_risk, weight_daily_national_13plus)) %>% 
+  mutate(oths_percent = weighted.mean(reason_not_get_covid19_booster_mc_others_before_me, weight_daily_national_13plus))
 
 
 
