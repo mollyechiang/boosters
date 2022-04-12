@@ -165,7 +165,7 @@ fig_byday_rolling <- ggplot(us_byday_rolling_means, aes(x = date, y = additional
   geom_line() + 
   geom_line(aes(x = date, y = boosters_3da, color = "3 Day Rolling Average")) + 
   geom_line(aes(x = date, y = boosters_7da, color = "7 Day Rolling Average")) + 
-  labs(title = "Daily National Booster Dose Administration in the US Over Time",
+  labs(title = "Daily National Booster Dose Administration in the United States",
        x = " ",
        y = "Number of Booster Doses Administered",
        color = " ") +
@@ -179,21 +179,25 @@ fig_byday_rolling7 <- ggplot(us_byday_rolling_means, aes(x = date, y = boosters_
   annotate(geom="text", x=as.Date("2021-12-01"), y=1300000, label="12/1/21: First Omicron\nCase Identified in US",
            color="black", size = 2.5) + 
   # https://www.cdc.gov/coronavirus/2019-ncov/variants/omicron-variant.html#:~:text=December%201%2C%202021%3A,of%20Omicron%20was%20identified.
-  annotate(geom="text", x=as.Date("2022-01-17"), y=400000, label="1/25/22: CDC Publishes\nData Indicating that\nOmicron is Less Severe\nthan Other Variants",
-           color="black", size = 2.5) + 
+  #annotate(geom="text", x=as.Date("2022-02-27"), y=520000, label="1/25/22: CDC Publishes\nData Indicating that\nOmicron is Less Severe\nthan Other Variants",
+           #color="black", size = 2.5) + 
   # https://www.cdc.gov/mmwr/volumes/71/wr/mm7104e4.htm
-  annotate(geom="text", x=as.Date("2022-01-15"), y=800000, label="1/15/22: Omicron Represents\n99.5% of all Sequenced\nVirus in the US",
+  annotate(geom="text", x=as.Date("2022-01-31"), y=760000, label="1/15/22: Omicron Represents\n99.5% of all Sequenced\nVirus in the US",
            color="black", size = 2.5) + 
   # https://www.cidrap.umn.edu/news-perspective/2022/01/cdc-confirms-omicron-less-severe-other-variants
   labs(title = "Daily National Booster Dose Administration in the US Over Time",
        x = " ",
        y = "Number of Booster Doses Administered",
-       color = " ") +
-  theme_minimal()
+       color = " ",
+       subtitle = "7 Day Rolling Average of CDC Data") +
+  theme_minimal() +
+  theme(plot.title = element_text(face="bold"))
 
 ggplotly(fig_byday)
 ggplotly(fig_byday_rolling)
 ggplotly(fig_byday_rolling7)
+
+fig_byday_rolling7
 
 
 
