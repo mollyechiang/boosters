@@ -280,6 +280,7 @@ twenty22 <- twenty22_total %>%
   filter(age >= 18) %>% 
   arrange(response_date) %>% 
   group_by(response_date) %>% 
+  # update weights for adults only
   mutate(weight_daily_national_18plus = weight_daily_national_13plus * (n()/sum(weight_daily_national_13plus))) %>% 
   ungroup() 
 
@@ -578,13 +579,13 @@ lows <- list(overall$inconv_low, overall$someth_else_low, overall$too_new_low, o
 # add upper and lower cis as columns in values df
 values <- values %>% 
   mutate(upper_ci = unlist(upps)) %>% 
-  mutate(lower_ci = unlist(lows))
+  mutate(lower_ci = unlist(lows)) %>% 
+  mutate(value = value*100) %>% 
+  mutate(upper_ci = upper_ci*100) %>% 
+  mutate(lower_ci = lower_ci*100)
 
 # plot - with error bars
 values %>% 
-  mutate(value = value*100) %>% 
-  mutate(upper_ci = upper_ci*100) %>% 
-  mutate(lower_ci = lower_ci*100) %>% 
   ggplot(aes(x = reorder(reason,value), y = value)) +
   geom_col() +
   geom_errorbar(aes(ymin=lower_ci, ymax=upper_ci), width=.2,
@@ -660,17 +661,17 @@ lg_lows <- list(likely_get$inconv_low, likely_get$someth_else_low, likely_get$to
 # add upper and lower cis as columns in values df
 likely_get_values <- likely_get_values %>% 
   mutate(upper_ci = unlist(lg_upps)) %>% 
-  mutate(lower_ci = unlist(lg_lows))
-
-# plot - with error bars
-likely_get_values %>% 
+  mutate(lower_ci = unlist(lg_lows)) %>% 
   mutate(covid19_booster_likely_to_get = replace(covid19_booster_likely_to_get, 
                                                  covid19_booster_likely_to_get == 2, "Not Willing")) %>%
   mutate(covid19_booster_likely_to_get = replace(covid19_booster_likely_to_get, 
                                                  covid19_booster_likely_to_get == 3, "Not Sure")) %>% 
   mutate(value = value*100) %>% 
   mutate(upper_ci = upper_ci*100) %>% 
-  mutate(lower_ci = lower_ci*100) %>% 
+  mutate(lower_ci = lower_ci*100) 
+
+# plot - with error bars
+likely_get_values %>% 
   ggplot(aes(x = reason, y = value, fill = covid19_booster_likely_to_get)) +
   geom_col(position = "dodge") +
   geom_errorbar(aes(ymin=lower_ci, ymax=upper_ci), width=.2,
@@ -798,7 +799,8 @@ party <- analysis_factored_surv %>%
                                          proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
                    others = survey_mean(reason_not_get_covid19_booster_mc_others_before_me, vartype = "ci", 
                                         proportion = TRUE, prop_method = "beta",  na.rm = TRUE)) %>% 
-  drop_na()
+  drop_na() %>%
+  slice(-c(4))
 
 # list of reasons
 columns_list <- c("inconvenient", "something else", "too new", "side effects", "threat exaggerated",
@@ -817,7 +819,7 @@ colnames(party_values) <- columns_list
 party_values <- as.data.frame(party_values) %>% 
   mutate(party = c("Republican", "Democrat", "Independent")) %>% 
   melt(id = 'party') %>% 
-  rename(reason = variable)
+  rename(reason = variable) 
 
 # make a list of the upper cis and lower cis 
 lg_upps <- list(party$inconv_upp, party$someth_else_upp, party$too_new_upp, party$side_ef_upp, 
