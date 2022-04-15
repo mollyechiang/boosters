@@ -393,14 +393,39 @@ analysis_factored <- analysis_factored  %>% select(response_id, response_date, w
 # make a survey design object - for all data
 analysis_factored_surv_all <- analysis_factored %>% as_survey_design(ids = 1, weights = weight_daily_national_18plus)
 
+# for fully vax un boosted
 analysis_factored_surv <- analysis_factored %>% 
   # filter for only those not willing or unsure of booster (only ones who were asked the questions)
-  filter(covid19_booster_likely_to_get %in% c(2,3)) %>% 
+  #filter(covid19_booster_likely_to_get %in% c(2,3)) %>% 
   # filter for vaccinated 
-  filter(get_vaccine_yesno == "Vaccinated") %>% 
+  #filter(get_vaccine_yesno == "Vaccinated") %>% 
   # filter for only fully vaccinated (not 1 dose ppl)
-  filter(received_all_covid19_required_doses == 1) %>% 
-  filter(vaccination_status != "Did Not Respond") %>% 
+  #filter(received_all_covid19_required_doses == 1) %>% 
+  filter(vaccination_status == "Fully Vaccinated") %>% 
+  # make into survey design
+  as_survey_design(ids = 1, weights = weight_daily_national_18plus)
+
+# unvax 
+analysis_factored_surv_unvax <- analysis_factored %>%
+  filter(vaccination_status == "Unvaccinated") %>% 
+  # make into survey design
+  as_survey_design(ids = 1, weights = weight_daily_national_18plus)
+
+# partially vax
+analysis_factored_surv_pvax <- analysis_factored %>%
+  filter(vaccination_status == "Partially Vaccinated") %>% 
+  # make into survey design
+  as_survey_design(ids = 1, weights = weight_daily_national_18plus)
+
+# fully vax and boosted
+analysis_factored_surv_andb <- analysis_factored %>%
+  filter(vaccination_status == "Fully Vaccinated and Boosted") %>% 
+  # make into survey design
+  as_survey_design(ids = 1, weights = weight_daily_national_18plus)
+
+# did not respond
+analysis_factored_surv_dnr <- analysis_factored %>%
+  filter(vaccination_status == "Did Not Respond - Vax Status") %>% 
   # make into survey design
   as_survey_design(ids = 1, weights = weight_daily_national_18plus)
 
@@ -893,6 +918,36 @@ surv_race<-analysis_factored_surv %>%
   dplyr::select(Characteristic=race_recode,Weighted) %>% 
   add_row(Characteristic ="Race", .before=1)
 
+surv_race_unvax <-analysis_factored_surv_unvax %>%
+  group_by(race_recode) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  dplyr::select(Characteristic=race_recode,Weighted) %>% 
+  add_row(Characteristic ="Race", .before=1)
+
+surv_race_pvax <-analysis_factored_surv_pvax %>%
+  group_by(race_recode) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  dplyr::select(Characteristic=race_recode,Weighted) %>% 
+  add_row(Characteristic ="Race", .before=1)
+
+surv_race_andb <-analysis_factored_surv_andb %>%
+  group_by(race_recode) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  dplyr::select(Characteristic=race_recode,Weighted) %>% 
+  add_row(Characteristic ="Race", .before=1)
+
+surv_race_dnr <-analysis_factored_surv_dnr %>%
+  group_by(race_recode) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  dplyr::select(Characteristic=race_recode,Weighted) %>% 
+  add_row(Characteristic ="Race", .before=1)
+
+
+
 surv_gender_all<-analysis_factored_surv_all %>%
   group_by(gender) %>%
   dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
@@ -907,6 +962,36 @@ surv_gender<-analysis_factored_surv %>%
   select(Characteristic=gender,Weighted) %>% 
   add_row(Characteristic ="Gender", .before=1)
 
+surv_gender_unvax <-analysis_factored_surv_unvax %>%
+  group_by(gender) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=gender,Weighted) %>% 
+  add_row(Characteristic ="Gender", .before=1)
+
+surv_gender_pvax <-analysis_factored_surv_pvax %>%
+  group_by(gender) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=gender,Weighted) %>% 
+  add_row(Characteristic ="Gender", .before=1)
+
+surv_gender_andb <-analysis_factored_surv_andb %>%
+  group_by(gender) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=gender,Weighted) %>% 
+  add_row(Characteristic ="Gender", .before=1)
+
+surv_gender_dnr <-analysis_factored_surv_dnr %>%
+  group_by(gender) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=gender,Weighted) %>% 
+  add_row(Characteristic ="Gender", .before=1)
+
+
+
 surv_edu_all<-analysis_factored_surv_all %>%
   group_by(edu) %>%
   dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
@@ -920,6 +1005,35 @@ surv_edu<-analysis_factored_surv %>%
   mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
   select(Characteristic=edu,Weighted) %>% 
   add_row(Characteristic ="Education", .before=1)
+
+surv_edu_unvax <-analysis_factored_surv_unvax %>%
+  group_by(edu) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=edu,Weighted) %>% 
+  add_row(Characteristic ="Education", .before=1)
+
+surv_edu_pvax <-analysis_factored_surv_pvax %>%
+  group_by(edu) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=edu,Weighted) %>% 
+  add_row(Characteristic ="Education", .before=1)
+
+surv_edu_andb <-analysis_factored_surv_andb %>%
+  group_by(edu) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=edu,Weighted) %>% 
+  add_row(Characteristic ="Education", .before=1)
+
+surv_edu_dnr <-analysis_factored_surv_dnr %>%
+  group_by(edu) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=edu,Weighted) %>% 
+  add_row(Characteristic ="Education", .before=1)
+
 
 
 surv_age_group_all<-analysis_factored_surv_all %>%
@@ -936,6 +1050,36 @@ surv_age_group<-analysis_factored_surv %>%
   select(Characteristic=age_group,Weighted) %>% 
   add_row(Characteristic ="Age", .before=1)
 
+surv_age_group_unvax <-analysis_factored_surv_unvax %>%
+  group_by(age_group) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=age_group,Weighted) %>% 
+  add_row(Characteristic ="Age", .before=1)
+
+surv_age_group_pvax <-analysis_factored_surv_pvax %>%
+  group_by(age_group) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=age_group,Weighted) %>% 
+  add_row(Characteristic ="Age", .before=1)
+
+surv_age_group_andb <-analysis_factored_surv_andb %>%
+  group_by(age_group) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=age_group,Weighted) %>% 
+  add_row(Characteristic ="Age", .before=1)
+
+surv_age_group_dnr <-analysis_factored_surv_dnr %>%
+  group_by(age_group) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=age_group,Weighted) %>% 
+  add_row(Characteristic ="Age", .before=1)
+
+
+
 surv_household_income_all<-analysis_factored_surv_all %>%
   group_by(household_income) %>%
   dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
@@ -949,6 +1093,36 @@ surv_household_income<-analysis_factored_surv %>%
   mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
   select(Characteristic=household_income,Weighted) %>% 
   add_row(Characteristic ="Household Income", .before=1)
+
+surv_household_income_unvax <-analysis_factored_surv_unvax %>%
+  group_by(household_income) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=household_income,Weighted) %>% 
+  add_row(Characteristic ="Household Income", .before=1)
+
+surv_household_income_pvax <-analysis_factored_surv_pvax %>%
+  group_by(household_income) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=household_income,Weighted) %>% 
+  add_row(Characteristic ="Household Income", .before=1)
+
+surv_household_income_andb <-analysis_factored_surv_andb %>%
+  group_by(household_income) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=household_income,Weighted) %>% 
+  add_row(Characteristic ="Household Income", .before=1)
+
+surv_household_income_dnr <-analysis_factored_surv_dnr %>%
+  group_by(household_income) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=household_income,Weighted) %>% 
+  add_row(Characteristic ="Household Income", .before=1)
+
+
 
 surv_vaccination_status_all<-analysis_factored_surv_all %>%
   group_by(vaccination_status) %>%
@@ -964,6 +1138,36 @@ surv_vaccination_status<-analysis_factored_surv %>%
   select(Characteristic=vaccination_status,Weighted) %>% 
   add_row(Characteristic ="COVID-19 Vaccine", .before=1)
 
+surv_vaccination_status_unvax <-analysis_factored_surv_unvax %>%
+  group_by(vaccination_status) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=vaccination_status,Weighted) %>% 
+  add_row(Characteristic ="COVID-19 Vaccine", .before=1)
+
+surv_vaccination_status_pvax <-analysis_factored_surv_pvax %>%
+  group_by(vaccination_status) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=vaccination_status,Weighted) %>% 
+  add_row(Characteristic ="COVID-19 Vaccine", .before=1)
+
+surv_vaccination_status_andb <-analysis_factored_surv_andb %>%
+  group_by(vaccination_status) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=vaccination_status,Weighted) %>% 
+  add_row(Characteristic ="COVID-19 Vaccine", .before=1)
+
+surv_vaccination_status_dnr <-analysis_factored_surv_dnr %>%
+  group_by(vaccination_status) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=vaccination_status,Weighted) %>% 
+  add_row(Characteristic ="COVID-19 Vaccine", .before=1)
+
+
+
 surv_party_all<-analysis_factored_surv_all %>%
   group_by(party) %>%
   dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
@@ -978,15 +1182,67 @@ surv_party<-analysis_factored_surv %>%
   select(Characteristic=party,Weighted) %>% 
   add_row(Characteristic ="Political Party", .before=1)
 
+surv_party_unvax <-analysis_factored_surv_unvax %>%
+  group_by(party) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=party,Weighted) %>% 
+  add_row(Characteristic ="Political Party", .before=1)
+
+surv_party_pvax <-analysis_factored_surv_pvax %>%
+  group_by(party) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=party,Weighted) %>% 
+  add_row(Characteristic ="Political Party", .before=1)
+
+surv_party_andb <-analysis_factored_surv_andb %>%
+  group_by(party) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=party,Weighted) %>% 
+  add_row(Characteristic ="Political Party", .before=1)
+
+surv_party_dnr <-analysis_factored_surv_dnr %>%
+  group_by(party) %>%
+  dplyr::summarize(proportion = survey_mean(),total = survey_total()) %>%
+  mutate(Weighted = paste0(format(round(total,1),nsmall=1)," (",format(round(proportion*100,1),nsmall=1),")")) %>%
+  select(Characteristic=party,Weighted) %>% 
+  add_row(Characteristic ="Political Party", .before=1)
+
+
 
 table_one_col1 <- rbind(surv_race,surv_gender,surv_edu,surv_age_group,surv_household_income,
-                   surv_vaccination_status,surv_party)
-table_one_col2 <- rbind(surv_race_all,surv_gender_all,surv_edu_all,surv_age_group_all,
-                        surv_household_income_all,surv_vaccination_status_all,surv_party_all)
-names(table_one_col1) <- c("Characteristic","Vaccinated But Not Boosted Survey Respondents, N (%)")
-names(table_one_col2) <- c("Characteristic", "All Survey Respondents, N (%)")
+                   surv_party,surv_vaccination_status)
+table_one_col2 <- rbind(surv_race_unvax,surv_gender_unvax,surv_edu_unvax,surv_age_group_unvax,
+                        surv_household_income_unvax,
+                        surv_party_unvax,surv_vaccination_status_unvax)
+table_one_col3 <- rbind(surv_race_pvax,surv_gender_pvax,surv_edu_pvax,surv_age_group_pvax,
+                        surv_household_income_pvax,
+                        surv_party_pvax,surv_vaccination_status_pvax)
+table_one_col4 <- rbind(surv_race_andb,surv_gender_andb,surv_edu_andb,
+                        surv_age_group_andb,surv_household_income_andb,
+                        surv_party_andb,surv_vaccination_status_andb)
+table_one_col5 <- rbind(surv_race_dnr,surv_gender_dnr,surv_edu_dnr,
+                        surv_age_group_dnr,surv_household_income_dnr,
+                        surv_party_dnr,surv_vaccination_status_dnr)
+table_one_collast <- rbind(surv_race_all,surv_gender_all,surv_edu_all,surv_age_group_all,
+                        surv_household_income_all,surv_party_all,surv_vaccination_status_all)
+names(table_one_col1) <- c("Characteristic","Fully Vaccinated But Not Boosted Survey Respondents, N (%)")
+names(table_one_col2) <- c("Characteristic","Unvaccinated Survey Respondents, N (%)")
+names(table_one_col3) <- c("Characteristic","Partially Vaccinated Survey Respondents, N (%)")
+names(table_one_col4) <- c("Characteristic","Fully Vaccinated and Boosted Survey Respondents, N (%)")
+names(table_one_col5) <- c("Characteristic","Did Not Respond, N (%)")
+names(table_one_collast) <- c("Characteristic", "All Survey Respondents, N (%)")
 
-table_one <- table_one_col2 %>% left_join(table_one_col1, by = "Characteristic")
+table_one <- table_one_col1 %>% 
+            full_join(table_one_col2, by = "Characteristic") %>% 
+            full_join(table_one_col3, by = "Characteristic") %>% 
+            full_join(table_one_col4, by = "Characteristic") %>% 
+            full_join(table_one_col5, by = "Characteristic") %>% 
+            full_join(table_one_collast, by = "Characteristic")
+
+write_csv(table_one, "table_one.csv")
 
 ##---------------TABLE TWO----------------
 surv_race_nw <-analysis_factored_surv_nw %>%
@@ -1097,6 +1353,8 @@ names(table_two_col1) <- c("Characteristic","Not Sure about Booster, N (%)")
 names(table_two_col2) <- c("Characteristic", "Not Willing to be Boosted, N (%)")
 
 table_two <- table_two_col2 %>% left_join(table_two_col1, by = "Characteristic")
+
+write_csv(table_two, "table_two.csv")
 
 ##---------------PLOTS - OLD----------------
 # overall - 2022
