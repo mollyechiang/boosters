@@ -302,7 +302,6 @@ excluded <- nrow(twenty22) - nrow(analysis)
 
 
 ##-----------------FACTORING---------------
-
 # factor twenty22 -- and then filter later  
 analysis_factored <- twenty22
 
@@ -395,12 +394,6 @@ analysis_factored_surv_all <- analysis_factored %>% as_survey_design(ids = 1, we
 
 # for fully vax un boosted
 analysis_factored_surv <- analysis_factored %>% 
-  # filter for only those not willing or unsure of booster (only ones who were asked the questions)
-  #filter(covid19_booster_likely_to_get %in% c(2,3)) %>% 
-  # filter for vaccinated 
-  #filter(get_vaccine_yesno == "Vaccinated") %>% 
-  # filter for only fully vaccinated (not 1 dose ppl)
-  #filter(received_all_covid19_required_doses == 1) %>% 
   filter(vaccination_status == "Fully Vaccinated") %>% 
   # make into survey design
   as_survey_design(ids = 1, weights = weight_daily_national_18plus)
@@ -536,14 +529,6 @@ ggplot() +
   geom_line(aes(y=too_pol_7da*100,x=response_date, color="Too Political"), data=too_pol_date) +
   geom_point(aes(y=too_pol_7da*100,x=response_date, color="Too Political"), data=too_pol_date) + 
   geom_ribbon(aes(ymin=too_pol_low_7da*100,ymax=too_pol_upp_7da*100, x=response_date, fill="Too Political"),alpha=0.1, data=too_pol_date) +
-  # distrust gov 
-  #geom_line(aes(y=distrust_gov_7da*100,x=response_date, color="Distrust Government"), data=distrust_gov_date) +
-  #geom_point(aes(y=distrust_gov_7da*100,x=response_date, color="Distrust Government"), data=distrust_gov_date) + 
-  #geom_ribbon(aes(ymin=distrust_gov_low_7da*100,ymax=distrust_gov_upp_7da*100, x=response_date, fill="Distrust Government"),alpha=0.1, data=distrust_gov_date) +
-  # distrust sci
-  #geom_line(aes(y=distrust_sci_7da*100,x=response_date, color="Distrust Scientists"), data=distrust_sci_date) +
-  #geom_point(aes(y=distrust_sci_7da*100,x=response_date, color="Distrust Scientists"), data=distrust_sci_date) + 
-  #geom_ribbon(aes(ymin=distrust_sci_low_7da*100,ymax=distrust_sci_upp_7da*100, x=response_date, fill="Distrust Scientists"),alpha=0.1, data=distrust_sci_date) +
   # inconv
   geom_line(aes(y=inconv_7da*100,x=response_date, color="Inconvenient"), data=inconv_date) +
   geom_point(aes(y=inconv_7da*100,x=response_date, color="Inconvenient"), data=inconv_date) + 
@@ -563,10 +548,12 @@ ggplot() +
        subtitle = "7-day Rolling Averages with 95% Confidence Intervals") +
   theme(legend.position = "right") +
   theme(legend.text=element_text(size=theme.size), plot.title = element_text(face = "bold")) +
+  scale_color_brewer(palette = "Dark2") +
+  scale_fill_brewer(palette = "Dark2") + 
   guides(fill = FALSE)
 
 
-##---------------PLOTS - NEW OVERALL----------------
+s##---------------PLOTS - NEW OVERALL----------------
 # get the overall percents and cis for each response
 overall <- analysis_factored_surv %>%
   dplyr::summarise(inconv = survey_mean(reason_not_get_covid19_booster_mc_inconvenient, vartype = "ci", 
