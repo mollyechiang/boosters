@@ -553,7 +553,7 @@ ggplot() +
   guides(fill = FALSE)
 
 
-s##---------------PLOTS - NEW OVERALL----------------
+###---------------PLOTS - NEW OVERALL----------------
 # get the overall percents and cis for each response
 overall <- analysis_factored_surv %>%
   dplyr::summarise(inconv = survey_mean(reason_not_get_covid19_booster_mc_inconvenient, vartype = "ci", 
@@ -582,9 +582,9 @@ overall <- analysis_factored_surv %>%
                                                proportion = TRUE, prop_method = "beta",  na.rm = TRUE))
 
 # list of reasons
-columns_list <- c("inconvenient", "something else", "too new", "side effects", "threat exaggerated",
-             "distrust gov", "distrust science", "too political", "got COVID and vaccine", "reaction",
-             "not at risk", "others before me")
+columns_list <- c("Inconvenient", "Something Else", "Too New", "Side Effects", "Threat Exaggerated",
+             "Distrust Gov", "Distrust Science", "Too Political", "Got COVID and Vaccine", "Reaction to Initial Vaccine",
+             "Not at Risk", "Others Before Me")
 
 # make a dataframe of the reasons and their mean value
 values <- cbind(overall$inconv, overall$someth_else, overall$too_new, overall$side_ef, 
@@ -628,10 +628,11 @@ values %>%
        y = "Percent of Respondents (%)",
        title = "Reasons Vaccinated Respondents Cited For Not Getting a COVID-19 Booster",
        subtitle = "Momentive Survey Data From the First 8 Weeks of 2022 (Jan 1 to Feb 26)") +
-  theme_minimal() +
+  theme_classic() +
   ylim(0,40) + 
   coord_flip() + 
-  theme(plot.title = element_text(face = "bold")) +
+  theme(plot.title = element_text(face = "bold"),
+        axis.text=element_text(color="black")) +
   theme(legend.position = "none")
 
 ##---------------PLOTS - NEW WILLINGNESS----------------
@@ -661,12 +662,13 @@ likely_get <- analysis_factored_surv %>%
                    no_risk = survey_mean(reason_not_get_covid19_booster_mc_not_at_risk, vartype = "ci", 
                                          proportion = TRUE, prop_method = "beta",  na.rm = TRUE),
                    others = survey_mean(reason_not_get_covid19_booster_mc_others_before_me, vartype = "ci", 
-                                        proportion = TRUE, prop_method = "beta",  na.rm = TRUE))
+                                        proportion = TRUE, prop_method = "beta",  na.rm = TRUE)) %>% 
+  filter(covid19_booster_likely_to_get %in% c(2,3))
 
 # list of reasons
-columns_list <- c("inconvenient", "something else", "too new", "side effects", "threat exaggerated",
-                  "distrust gov", "distrust science", "too political", "got COVID and vaccine", "reaction",
-                  "not at risk", "others before me")
+columns_list <- c("Inconvenient", "Something Else", "Too New", "Side Effects", "Threat Exaggerated",
+                  "Distrust Gov", "Distrust Science", "Too Political", "Got COVID and Vaccine", "Reaction to Initial Vaccine",
+                  "Not at Risk", "Others Before Me")
 
 # make a dataframe of the reasons and their mean value
 likely_get_values <- cbind(likely_get$inconv, likely_get$someth_else, likely_get$too_new, likely_get$side_ef, 
@@ -690,7 +692,6 @@ lg_upps <- list(likely_get$inconv_upp, likely_get$someth_else_upp, likely_get$to
 lg_lows <- list(likely_get$inconv_low, likely_get$someth_else_low, likely_get$too_new_low, likely_get$side_ef_low, 
              likely_get$threat_exag_low, likely_get$dis_gov_low, likely_get$dis_sci_low, likely_get$too_pol_low, 
              likely_get$got_covandvax_low, likely_get$rxn_low, likely_get$no_risk_low, likely_get$others_low)
-
 
 # add upper and lower cis as columns in values df
 likely_get_values <- likely_get_values %>% 
@@ -716,10 +717,11 @@ likely_get_values %>%
        subtitle = "Momentive Survey Data From the First 8 Weeks of 2022 (Jan 1 to Feb 26)",
        fill = "Willingness to be Boosted") +
   scale_fill_manual(values = c("#333333", "#999999")) +
-  theme_minimal() +
+  theme_classic() +
   ylim(0,50) + 
   coord_flip() + 
-  theme(plot.title = element_text(face = "bold"))
+  theme(plot.title = element_text(face = "bold"),
+        axis.text=element_text(color="black"))
 
 ##---------------PLOTS - NEW VAX TYPE----------------
 # get the overall percents and cis for each response
@@ -752,9 +754,9 @@ vax_type <- analysis_factored_surv %>%
   drop_na()
 
 # list of reasons
-columns_list <- c("inconvenient", "something else", "too new", "side effects", "threat exaggerated",
-                  "distrust gov", "distrust science", "too political", "got COVID and vaccine", "reaction",
-                  "not at risk", "others before me")
+columns_list <- c("Inconvenient", "Something Else", "Too New", "Side Effects", "Threat Exaggerated",
+                  "Distrust Gov", "Distrust Science", "Too Political", "Got COVID and Vaccine", "Reaction to Initial Vaccine",
+                  "Not at Risk", "Others Before Me")
 
 # make a dataframe of the reasons and their mean value
 vax_type_values <- cbind(vax_type$inconv, vax_type$someth_else, vax_type$too_new, vax_type$side_ef, 
@@ -799,7 +801,7 @@ vax_type_values %>%
        title = "Reasons Vaccinated Respondents Cited For Not Getting a\nCOVID-19 Booster, By Vaccine Type",
        subtitle = "Momentive Survey Data From the First 8 Weeks of 2022 (Jan 1 to Feb 26)",
        fill = "Vax Type") +
-  theme_minimal() +
+  theme_classic() +
   ylim(0,50) + 
   coord_flip() + 
   scale_fill_manual(values = c("#999999","#333333", "#666666")) + 
@@ -837,9 +839,9 @@ party <- analysis_factored_surv %>%
   slice(-c(4))
 
 # list of reasons
-columns_list <- c("inconvenient", "something else", "too new", "side effects", "threat exaggerated",
-                  "distrust gov", "distrust science", "too political", "got COVID and vaccine", "reaction",
-                  "not at risk", "others before me")
+columns_list <- c("Inconvenient", "Something Else", "Too New", "Side Effects", "Threat Exaggerated",
+                  "Distrust Gov", "Distrust Science", "Too Political", "Got COVID and Vaccine", "Reaction to Initial Vaccine",
+                  "Not at Risk", "Others Before Me")
 
 # make a dataframe of the reasons and their mean value
 party_values <- cbind(party$inconv, party$someth_else, party$too_new, party$side_ef, 
@@ -884,11 +886,12 @@ party_values %>%
        title = "Reasons Vaccinated Respondents Cited For Not Getting a\nCOVID-19 Booster, By Political Party",
        subtitle = "Momentive Survey Data From the First 8 Weeks of 2022 (Jan 1 to Feb 26)",
        fill = "Political Party") +
-  theme_minimal() +
-  ylim(0,50) + 
+  theme_classic() +
+  ylim(0,45) + 
   coord_flip() + 
   scale_fill_manual(values = c("#3232ff", "#198C19", "#E52C2C")) + 
-  theme(plot.title = element_text(face = "bold"))
+  theme(plot.title = element_text(face = "bold"),
+        axis.text=element_text(color="black"))
 
 ##---------------TABLE ONE----------------
 surv_race_all<-analysis_factored_surv_all %>%
