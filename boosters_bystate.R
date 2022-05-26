@@ -137,7 +137,8 @@ us_byday <- total_data %>%
          additional_doses_janssen) %>%
   mutate(date = as.Date(date, format="%m/%d/%Y")) %>%  
   filter(location == 'US') %>%
-  filter(date >= '2021-08-23')
+  filter(date >= '2021-08-23') %>% 
+  filter(date <= '2022-04-23')
 
 additional_administered_byday_list <- c(NA, diff(rev(us_byday$additional_doses)))
 
@@ -175,23 +176,24 @@ fig_byday_rolling7 <- ggplot(us_byday_rolling_means, aes(x = date, y = boosters_
                                                         color = "7 Day Rolling Average")) +
   geom_line() + 
   annotate(geom="text", x=as.Date("2021-11-25"), y=250000, label="1/25/21: Thanksgiving",
-           color="black", size = 2.5) + 
-  annotate(geom="text", x=as.Date("2021-12-01"), y=1300000, label="12/1/21: First Omicron\nCase Identified in US",
-           color="black", size = 2.5) + 
+           color="black", size = 4) + 
+  annotate(geom="text", x=as.Date("2021-12-01"), y=1330000, label="12/1/21: First Omicron\nCase Identified in US",
+           color="black", size = 4) + 
   # https://www.cdc.gov/coronavirus/2019-ncov/variants/omicron-variant.html#:~:text=December%201%2C%202021%3A,of%20Omicron%20was%20identified.
   #annotate(geom="text", x=as.Date("2022-02-27"), y=520000, label="1/25/22: CDC Publishes\nData Indicating that\nOmicron is Less Severe\nthan Other Variants",
            #color="black", size = 2.5) + 
   # https://www.cdc.gov/mmwr/volumes/71/wr/mm7104e4.htm
-  annotate(geom="text", x=as.Date("2022-01-31"), y=760000, label="1/15/22: Omicron Represents\n99.5% of all Sequenced\nVirus in the US",
-           color="black", size = 2.5) + 
+  annotate(geom="text", x=as.Date("2022-02-05"), y=765000, label="1/15/22: Omicron Represents\n99.5% of all Sequenced\nVirus in the US",
+           color="black", size = 4) + 
   # https://www.cidrap.umn.edu/news-perspective/2022/01/cdc-confirms-omicron-less-severe-other-variants
   labs(title = "Daily National Booster Dose Administration in the US Over Time",
        x = " ",
        y = "Number of Booster Doses Administered",
        color = " ",
        subtitle = "7 Day Rolling Average of CDC Data") +
-  theme_minimal() +
-  theme(plot.title = element_text(face="bold"))
+  theme_classic() +
+  theme(plot.title = element_text(face="bold")) +
+  scale_y_continuous(labels = comma)
 
 ggplotly(fig_byday)
 ggplotly(fig_byday_rolling)
