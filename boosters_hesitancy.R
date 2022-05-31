@@ -299,6 +299,7 @@ num_unsure <- analysis %>% filter(covid19_booster_likely_to_get == 3) %>% nrow()
   # 6318 are unsure - big category!
 
 excluded <- nrow(twenty22) - nrow(analysis)
+excluded_actual <- nrow(twenty22_total) - nrow(twenty22)
 
 
 ##-----------------FACTORING---------------
@@ -451,68 +452,101 @@ side_ef_date <- analysis_factored_surv %>%
   group_by(response_date) %>%
   dplyr::summarise(side_ef = survey_mean(reason_not_get_covid19_booster_mc_side_effect, vartype = "ci", proportion = TRUE, 
                                          prop_method = "beta",  na.rm = TRUE)) %>% 
-  mutate(side_ef_7da = rollmean(side_ef, k = 7, fill = NA)) %>%
-  mutate(side_ef_upp_7da = rollmean(side_ef_upp, k = 7, fill = NA)) %>% 
-  mutate(side_ef_low_7da = rollmean(side_ef_low, k = 7, fill = NA))
+  mutate(side_ef_7da = rollmean(side_ef, k = 7, fill = NA, align = 'right')) %>%
+  mutate(side_ef_upp_7da = rollmean(side_ef_upp, k = 7, fill = NA, align = 'right')) %>% 
+  mutate(side_ef_low_7da = rollmean(side_ef_low, k = 7, fill = NA, align = 'right')) %>% 
+  group_by(mean = (row_number() -1) %/% 7) %>%
+  mutate(side_ef_upp_mean = mean(side_ef_upp)) %>% 
+  mutate(side_ef_low_mean = mean(side_ef_low))
 
 got_covandvax_date <- analysis_factored_surv %>%
   group_by(response_date) %>%
   dplyr::summarise(got_covandvax = survey_mean(reason_not_get_covid19_booster_mc_got_covid19_and_vaccinated,
                                                vartype = "ci", proportion = TRUE, 
                                                prop_method = "beta",  na.rm = TRUE)) %>% 
-  mutate(got_covandvax_7da = rollmean(got_covandvax, k = 7, fill = NA)) %>%
-  mutate(got_covandvax_upp_7da = rollmean(got_covandvax_upp, k = 7, fill = NA)) %>% 
-  mutate(got_covandvax_low_7da = rollmean(got_covandvax_low, k = 7, fill = NA))
+  mutate(got_covandvax_7da = rollmean(got_covandvax, k = 7, fill = NA, align = 'right')) %>%
+  mutate(got_covandvax_upp_7da = rollmean(got_covandvax_upp, k = 7, fill = NA, align = 'right')) %>% 
+  mutate(got_covandvax_low_7da = rollmean(got_covandvax_low, k = 7, fill = NA, align = 'right')) %>% 
+  group_by(mean = (row_number() -1) %/% 7) %>%
+  mutate(got_covandvax_upp_mean = mean(got_covandvax_upp)) %>% 
+  mutate(got_covandvax_low_mean = mean(got_covandvax_low))
 
 too_pol_date <- analysis_factored_surv %>%
   group_by(response_date) %>%
   dplyr::summarise(too_pol = survey_mean(reason_not_get_covid19_booster_mc_too_political,
                                          vartype = "ci", proportion = TRUE, 
                                          prop_method = "beta",  na.rm = TRUE)) %>% 
-  mutate(too_pol_7da = rollmean(too_pol, k = 7, fill = NA)) %>%
-  mutate(too_pol_upp_7da = rollmean(too_pol_upp, k = 7, fill = NA)) %>% 
-  mutate(too_pol_low_7da = rollmean(too_pol_low, k = 7, fill = NA))
+  mutate(too_pol_7da = rollmean(too_pol, k = 7, fill = NA, align = 'right')) %>%
+  mutate(too_pol_upp_7da = rollmean(too_pol_upp, k = 7, fill = NA, align = 'right')) %>% 
+  mutate(too_pol_low_7da = rollmean(too_pol_low, k = 7, fill = NA, align = 'right')) %>% 
+  group_by(mean = (row_number() -1) %/% 7) %>%
+  mutate(too_pol_upp_mean = mean(too_pol_upp)) %>% 
+  mutate(too_pol_low_mean = mean(too_pol_low))
+
+too_new_date <- analysis_factored_surv %>%
+  group_by(response_date) %>%
+  dplyr::summarise(too_new = survey_mean(reason_not_get_covid19_booster_mc_too_new,
+                                         vartype = "ci", proportion = TRUE, 
+                                         prop_method = "beta",  na.rm = TRUE)) %>% 
+  mutate(too_new_7da = rollmean(too_new, k = 7, fill = NA, align = 'right')) %>%
+  mutate(too_new_upp_7da = rollmean(too_new_upp, k = 7, fill = NA, align = 'right')) %>% 
+  mutate(too_new_low_7da = rollmean(too_new_low, k = 7, fill = NA, align = 'right')) %>% 
+  group_by(mean = (row_number() -1) %/% 7) %>%
+  mutate(too_new_upp_mean = mean(too_new_upp)) %>% 
+  mutate(too_new_low_mean = mean(too_new_low))
 
 distrust_gov_date <- analysis_factored_surv %>%
   group_by(response_date) %>%
   dplyr::summarise(distrust_gov = survey_mean(reason_not_get_covid19_booster_mc_distrust_government,
                                          vartype = "ci", proportion = TRUE, 
                                          prop_method = "beta",  na.rm = TRUE)) %>% 
-  mutate(distrust_gov_7da = rollmean(distrust_gov, k = 7, fill = NA)) %>%
-  mutate(distrust_gov_upp_7da = rollmean(distrust_gov_upp, k = 7, fill = NA)) %>% 
-  mutate(distrust_gov_low_7da = rollmean(distrust_gov_low, k = 7, fill = NA))
+  mutate(distrust_gov_7da = rollmean(distrust_gov, k = 7, fill = NA, align = 'right')) %>%
+  mutate(distrust_gov_upp_7da = rollmean(distrust_gov_upp, k = 7, fill = NA, align = 'right')) %>% 
+  mutate(distrust_gov_low_7da = rollmean(distrust_gov_low, k = 7, fill = NA, align = 'right')) %>%
+  group_by(mean = (row_number() -1) %/% 7) %>%
+  mutate(distrust_gov_upp_mean = mean(distrust_gov_upp)) %>% 
+  mutate(distrust_gov_low_mean = mean(distrust_gov_low))
 
 distrust_sci_date <- analysis_factored_surv %>%
   group_by(response_date) %>%
   dplyr::summarise(distrust_sci = survey_mean(reason_not_get_covid19_booster_mc_distrust_scientist,
                                               vartype = "ci", proportion = TRUE, 
                                               prop_method = "beta",  na.rm = TRUE)) %>% 
-  mutate(distrust_sci_7da = rollmean(distrust_sci, k = 7, fill = NA)) %>%
-  mutate(distrust_sci_upp_7da = rollmean(distrust_sci_upp, k = 7, fill = NA)) %>% 
-  mutate(distrust_sci_low_7da = rollmean(distrust_sci_low, k = 7, fill = NA))
+  mutate(distrust_sci_7da = rollmean(distrust_sci, k = 7, fill = NA, align = 'right')) %>%
+  mutate(distrust_sci_upp_7da = rollmean(distrust_sci_upp, k = 7, fill = NA, align = 'right')) %>% 
+  mutate(distrust_sci_low_7da = rollmean(distrust_sci_low, k = 7, fill = NA, align = 'right')) %>%
+  group_by(mean = (row_number() -1) %/% 7) %>%
+  mutate(distrust_sci_upp_mean = mean(distrust_sci_upp)) %>% 
+  mutate(distrust_sci_low_mean = mean(distrust_sci_low))
 
 inconv_date <- analysis_factored_surv %>%
   group_by(response_date) %>%
   dplyr::summarise(inconv = survey_mean(reason_not_get_covid19_booster_mc_inconvenient,
                                               vartype = "ci", proportion = TRUE, 
                                               prop_method = "beta",  na.rm = TRUE)) %>% 
-  mutate(inconv_7da = rollmean(inconv, k = 7, fill = NA)) %>%
-  mutate(inconv_upp_7da = rollmean(inconv_upp, k = 7, fill = NA)) %>% 
-  mutate(inconv_low_7da = rollmean(inconv_low, k = 7, fill = NA))
+  mutate(inconv_7da = rollmean(inconv, k = 7, fill = NA, align = 'right')) %>%
+  mutate(inconv_upp_7da = rollmean(inconv_upp, k = 7, fill = NA, align = 'right')) %>% 
+  mutate(inconv_low_7da = rollmean(inconv_low, k = 7, fill = NA, align = 'right')) %>%
+  group_by(mean = (row_number() -1) %/% 7) %>%
+  mutate(inconv_upp_mean = mean(inconv_upp)) %>% 
+  mutate(inconv_low_mean = mean(inconv_low))
 
 no_risk_date <- analysis_factored_surv %>%
   group_by(response_date) %>%
   dplyr::summarise(no_risk = survey_mean(reason_not_get_covid19_booster_mc_not_at_risk,
                                               vartype = "ci", proportion = TRUE, 
                                               prop_method = "beta",  na.rm = TRUE)) %>% 
-  mutate(no_risk_7da = rollmean(no_risk, k = 7, fill = NA)) %>%
-  mutate(no_risk_upp_7da = rollmean(no_risk_upp, k = 7, fill = NA)) %>% 
-  mutate(no_risk_low_7da = rollmean(no_risk_low, k = 7, fill = NA))
+  mutate(no_risk_7da = rollmean(no_risk, k = 7, fill = NA, align = 'right')) %>%
+  mutate(no_risk_upp_7da = rollmean(no_risk_upp, k = 7, fill = NA, align = 'right')) %>% 
+  mutate(no_risk_low_7da = rollmean(no_risk_low, k = 7, fill = NA, align = 'right')) %>%
+  group_by(mean = (row_number() -1) %/% 7) %>%
+  mutate(no_risk_upp_mean = mean(no_risk_upp)) %>% 
+  mutate(no_risk_low_mean = mean(no_risk_low))
 
 # setting info for plot 
 geom.text.size = 3.2
 theme.size = (14/5) * geom.text.size
-break.vec <- c(seq(from = as.Date("2022-01-05"), to = as.Date("2022-02-23"),
+break.vec <- c(seq(from = as.Date("2022-01-08"), to = as.Date("2022-02-23"),
                    by = "1 week"))
 
 # plot
@@ -520,27 +554,27 @@ ggplot() +
   # side ef
   geom_line(aes(y=side_ef_7da*100,x=response_date, color="Side Effects"), data=side_ef_date) +
   geom_point(aes(y=side_ef_7da*100,x=response_date, color="Side Effects"), data=side_ef_date) + 
-  geom_ribbon(aes(ymin=side_ef_low_7da*100,ymax=side_ef_upp_7da*100, x=response_date, fill="Side Effects"),alpha=0.1, data=side_ef_date) +
+  geom_ribbon(aes(ymin=side_ef_low_mean*100,ymax=side_ef_upp_mean*100, x=response_date, fill="Side Effects"),alpha=0.1, data=side_ef_date) +
+  # too new
+  geom_line(aes(y=too_new_7da*100,x=response_date, color="Too New"), data=too_new_date) +
+  geom_point(aes(y=too_new_7da*100,x=response_date, color="Too New"), data=too_new_date) + 
+  geom_ribbon(aes(ymin=too_new_low_mean*100,ymax=too_new_upp_mean*100, x=response_date, fill="Too New"),alpha=0.1, data=too_new_date) +
   # got cov and vax 
   geom_line(aes(y=got_covandvax_7da*100,x=response_date, color="Got COVID and Vax"), data=got_covandvax_date) +
   geom_point(aes(y=got_covandvax_7da*100,x=response_date, color="Got COVID and Vax"), data=got_covandvax_date) + 
-  geom_ribbon(aes(ymin=got_covandvax_low_7da*100,ymax=got_covandvax_upp_7da*100, x=response_date, fill="Got COVID and Vax"),alpha=0.1, data=got_covandvax_date) +
+  geom_ribbon(aes(ymin=got_covandvax_low_mean*100,ymax=got_covandvax_upp_mean*100, x=response_date, fill="Got COVID and Vax"),alpha=0.1, data=got_covandvax_date) +
   # too political
   geom_line(aes(y=too_pol_7da*100,x=response_date, color="Too Political"), data=too_pol_date) +
   geom_point(aes(y=too_pol_7da*100,x=response_date, color="Too Political"), data=too_pol_date) + 
-  geom_ribbon(aes(ymin=too_pol_low_7da*100,ymax=too_pol_upp_7da*100, x=response_date, fill="Too Political"),alpha=0.1, data=too_pol_date) +
+  geom_ribbon(aes(ymin=too_pol_low_mean*100,ymax=too_pol_upp_mean*100, x=response_date, fill="Too Political"),alpha=0.1, data=too_pol_date) +
   # inconv
   geom_line(aes(y=inconv_7da*100,x=response_date, color="Inconvenient"), data=inconv_date) +
   geom_point(aes(y=inconv_7da*100,x=response_date, color="Inconvenient"), data=inconv_date) + 
-  geom_ribbon(aes(ymin=inconv_low_7da*100,ymax=inconv_upp_7da*100, x=response_date, fill="Inconvenient"),alpha=0.1, data=inconv_date) +
-  # no risk
-  geom_line(aes(y=no_risk_7da*100,x=response_date, color="Not at Risk"), data=no_risk_date) +
-  geom_point(aes(y=no_risk_7da*100,x=response_date, color="Not at Risk"), data=no_risk_date) + 
-  geom_ribbon(aes(ymin=no_risk_low_7da*100,ymax=no_risk_upp_7da*100, x=response_date, fill="Not at Risk"),alpha=0.1, data=no_risk_date) +
-  
+  geom_ribbon(aes(ymin=inconv_low_mean*100,ymax=inconv_upp_mean*100, x=response_date, fill="Inconvenient"),alpha=0.1, data=inconv_date) +
+
   theme_classic() +
   scale_y_continuous(limit=c(-2,55),expand = c(0, 0))+
-  scale_x_date(date_labels = "%b %d", breaks=break.vec, limits = c(as.Date("2022-01-05"),as.Date("2022-02-23")))+
+  scale_x_date(date_labels = "%b %d", breaks=break.vec, limits = c(as.Date("2022-01-08"),as.Date("2022-02-23")))+
   labs(x = " ", 
        y= "Percent of Respondents (%)",
        color = "Reason",
