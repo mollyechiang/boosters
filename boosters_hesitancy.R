@@ -586,6 +586,38 @@ ggplot() +
   scale_fill_brewer(palette = "Dark2") + 
   guides(fill = FALSE)
 
+# No CIs 
+ggplot() + 
+  # side ef
+  geom_line(aes(y=side_ef_7da*100,x=response_date, color="Side Effects"), data=side_ef_date) +
+  geom_point(aes(y=side_ef_7da*100,x=response_date, color="Side Effects"), data=side_ef_date) + 
+  # too new
+  geom_line(aes(y=too_new_7da*100,x=response_date, color="Too New"), data=too_new_date) +
+  geom_point(aes(y=too_new_7da*100,x=response_date, color="Too New"), data=too_new_date) + 
+  # got cov and vax 
+  geom_line(aes(y=got_covandvax_7da*100,x=response_date, color="Got COVID and Vax"), data=got_covandvax_date) +
+  geom_point(aes(y=got_covandvax_7da*100,x=response_date, color="Got COVID and Vax"), data=got_covandvax_date) + 
+  # too political
+  geom_line(aes(y=too_pol_7da*100,x=response_date, color="Too Political"), data=too_pol_date) +
+  geom_point(aes(y=too_pol_7da*100,x=response_date, color="Too Political"), data=too_pol_date) + 
+  # inconv
+  geom_line(aes(y=inconv_7da*100,x=response_date, color="Inconvenient"), data=inconv_date) +
+  geom_point(aes(y=inconv_7da*100,x=response_date, color="Inconvenient"), data=inconv_date) + 
+  
+  theme_classic() +
+  scale_y_continuous(limit=c(-2,55),expand = c(0, 0))+
+  scale_x_date(date_labels = "%b %d", breaks=break.vec, limits = c(as.Date("2022-01-08"),as.Date("2022-02-23")))+
+  labs(x = " ", 
+       y= "Percent of Respondents (%)",
+       color = "Reason",
+       title = "Reasons Vaccinated Respondents Cited for Not Getting Boosted\nin the First 8 Weeks of 2022",
+       subtitle = "7-day Rolling Averages") +
+  theme(legend.position = "right") +
+  theme(legend.text=element_text(size=theme.size), plot.title = element_text(face = "bold")) +
+  scale_color_brewer(palette = "Dark2") +
+  scale_fill_brewer(palette = "Dark2") + 
+  guides(fill = FALSE)
+
 
 ###---------------PLOTS - NEW OVERALL----------------
 # get the overall percents and cis for each response
